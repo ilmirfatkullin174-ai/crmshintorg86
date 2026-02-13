@@ -413,7 +413,7 @@
                                     </div>
                                 </div>
                                 <div class="alert alert-info mt-2 mb-0 py-2">
-                                    <small><i class="bi bi-info-circle"></i> Новый тариф применяется ко всем новым сменам</small>
+                                    <small><i class="bi bi-info-circle"></i> Новые смены считаются по новому тарифу</small>
                                 </div>
                             </div>
                         </div>
@@ -998,8 +998,9 @@
             else hours = whole + 1;
             if (hours < 1) hours = 1;
             
-            // ✅ ИСПОЛЬЗУЕМ АКТУАЛЬНЫЙ ТАРИФ!
-            const earn = Math.round(hours * currentRate);
+            // ✅ ИСПОЛЬЗУЕМ АКТУАЛЬНЫЙ ТАРИФ (БЕРЁМ ПРЯМО СЕЙЧАС!)
+            const rateToUse = currentRate;
+            const earn = Math.round(hours * rateToUse);
             const comment = document.getElementById('shift-comment').value || '';
             
             // ✅ СОЗДАЁМ ОБЪЕКТ ПОЕЗДКИ С ВРЕМЕННЫМ ID
@@ -1011,6 +1012,7 @@
                 type: 'город',
                 hours: hours,
                 earn: earn,
+                rate: rateToUse, // СОХРАНЯЕМ ТАРИФ В ПОЕЗДКУ
                 comment: comment,
                 startTime: shiftStartTime.toISOString(),
                 endTime: new Date().toISOString()
@@ -1043,7 +1045,7 @@
             document.getElementById('shift-comment').value = '';
             document.getElementById('geo-status-block').innerHTML = '<span class="geo-inactive"><i class="bi bi-satellite"></i> Геолокация не активна</span>';
             
-            alert(`✅ Смена завершена! Заработано: ${earn} ₽`);
+            alert(`✅ Смена завершена! Тариф: ${rateToUse} ₽/ч, Заработано: ${earn} ₽`);
             
             // ✅ 4. ОТПРАВЛЯЕМ В FIREBASE (в фоне)
             try {
@@ -1054,6 +1056,7 @@
                     type: 'город',
                     hours: hours,
                     earn: earn,
+                    rate: rateToUse,
                     comment: comment,
                     startTime: shiftStartTime.toISOString(),
                     endTime: newTrip.endTime,
