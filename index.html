@@ -28,7 +28,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a3a4a; font-family: 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 0; }
         
-        /* МОБИЛЬНАЯ ВЕРСИЯ (по умолчанию для водителя и куратора) */
+        /* МОБИЛЬНАЯ ВЕРСИЯ (для водителя и куратора) */
         .mobile-container { max-width: 450px; width: 100%; background: #f5f9fc; min-height: 100vh; box-shadow: 0 0 30px rgba(0,0,0,0.2); overflow-x: hidden; margin: 0 auto; }
         
         /* ДЕСКТОПНАЯ ВЕРСИЯ (для админа) */
@@ -959,7 +959,7 @@
             } 
         };
         
-        // ============ СМЕНА ============
+        // ============ СМЕНА - МГНОВЕННОЕ ОТОБРАЖЕНИЕ! ============
         window.startShift = async function() {
             if (!currentUser || !currentUser.id) return;
             shiftActive = true; 
@@ -987,6 +987,8 @@
         
         window.endShift = async function() {
             if (!shiftActive || !currentUser || !currentUser.id) return;
+            
+            // Расчёт часов
             const seconds = Math.floor((new Date() - shiftStartTime) / 1000);
             let hours = seconds / 3600;
             let whole = Math.floor(hours);
@@ -1000,44 +1002,74 @@
             const earn = Math.round(hours * currentRate);
             const comment = document.getElementById('shift-comment').value || '';
             
+            // ✅ СОЗДАЁМ ОБЪЕКТ ПОЕЗДКИ С ВРЕМЕННЫМ ID
+            const newTrip = {
+                id: 'temp_' + Date.now() + '_' + Math.random(),
+                driverId: currentUser.phone,
+                driverName: currentUser.short || currentUser.name,
+                date: new Date().toISOString().split('T')[0],
+                type: 'город',
+                hours: hours,
+                earn: earn,
+                comment: comment,
+                startTime: shiftStartTime.toISOString(),
+                endTime: new Date().toISOString()
+            };
+            
+            // ✅ 1. СРАЗУ ДОБАВЛЯЕМ В ЛОКАЛЬНЫЙ МАССИВ (МГНОВЕННО!)
+            LOCAL_TRIPS.push(newTrip);
+            
+            // ✅ 2. СРАЗУ ОБНОВЛЯЕМ ТАБЛИЦУ!
+            loadDriverData();
+            
+            // ✅ 3. Обновляем статус водителя (локально)
+            currentUser.status = 'offline';
+            currentUser.shiftType = null;
+            currentUser.shiftStartTime = null;
+            saveSession();
+            
+            // Останавливаем таймер и геолокацию
+            if (geoWatchId) { 
+                navigator.geolocation.clearWatch(geoWatchId); 
+                geoWatchId = null; 
+            }
+            shiftActive = false; 
+            clearInterval(shiftTimer);
+            
+            // Обновляем UI
+            document.getElementById('timer-display').innerText = '00:00:00';
+            document.getElementById('shift-start-btn').classList.remove('hidden'); 
+            document.getElementById('shift-end-btn').classList.add('hidden');
+            document.getElementById('shift-comment').value = '';
+            document.getElementById('geo-status-block').innerHTML = '<span class="geo-inactive"><i class="bi bi-satellite"></i> Геолокация не активна</span>';
+            
+            alert(`✅ Смена завершена! Заработано: ${earn} ₽`);
+            
+            // ✅ 4. ОТПРАВЛЯЕМ В FIREBASE (в фоне)
             try {
                 await db.collection('trips').add({
-                    driverId: currentUser.phone, 
+                    driverId: currentUser.phone,
                     driverName: currentUser.short || currentUser.name,
-                    date: new Date().toISOString().split('T')[0], 
+                    date: newTrip.date,
                     type: 'город',
-                    hours: hours, 
-                    earn: earn, 
+                    hours: hours,
+                    earn: earn,
                     comment: comment,
                     startTime: shiftStartTime.toISOString(),
-                    endTime: new Date().toISOString(),
-                    location: currentUser.location || '', 
+                    endTime: newTrip.endTime,
                     timestamp: new Date().toISOString()
                 });
+                
                 await db.collection('drivers').doc(currentUser.id).update({ 
                     status: 'offline', 
                     shiftType: null, 
                     shiftStartTime: null 
                 });
-                currentUser.status = 'offline'; 
-                currentUser.shiftType = null; 
-                currentUser.shiftStartTime = null; 
-                saveSession();
-                if (geoWatchId) { 
-                    navigator.geolocation.clearWatch(geoWatchId); 
-                    geoWatchId = null; 
-                }
-                shiftActive = false; 
-                clearInterval(shiftTimer);
-                document.getElementById('timer-display').innerText = '00:00:00';
-                document.getElementById('shift-start-btn').classList.remove('hidden'); 
-                document.getElementById('shift-end-btn').classList.add('hidden');
-                document.getElementById('shift-comment').value = '';
-                document.getElementById('geo-status-block').innerHTML = '<span class="geo-inactive"><i class="bi bi-satellite"></i> Геолокация не активна</span>';
-                alert(`✅ Смена завершена! Заработано: ${earn} ₽`);
+                
             } catch (error) { 
-                console.error('Ошибка завершения смены:', error); 
-                alert('❌ Ошибка завершения смены'); 
+                console.error('Ошибка отправки в Firebase:', error);
+                // Если ошибка - добавим в очередь на синхронизацию
+                addToOfflineQueue('add_trip', newTrip);
             }
         };
         
@@ -1051,24 +1083,46 @@
                 return; 
             }
             const comment = document.getElementById('inter-comment').value || '';
+            
+            // ✅ СОЗДАЁМ ОБЪЕКТ ПОЕЗДКИ
+            const newTrip = {
+                id: 'temp_' + Date.now() + '_' + Math.random(),
+                driverId: currentUser.phone,
+                driverName: currentUser.short || currentUser.name,
+                date: new Date().toISOString().split('T')[0],
+                type: 'межгород',
+                direction: direction,
+                earn: sum,
+                comment: comment
+            };
+            
+            // ✅ 1. СРАЗУ ДОБАВЛЯЕМ В ЛОКАЛЬНЫЙ МАССИВ
+            LOCAL_TRIPS.push(newTrip);
+            
+            // ✅ 2. СРАЗУ ОБНОВЛЯЕМ ТАБЛИЦУ
+            loadDriverData();
+            
+            document.getElementById('inter-direction').value = ''; 
+            document.getElementById('inter-sum').value = ''; 
+            document.getElementById('inter-comment').value = '';
+            
+            alert(`🚛 Рейс зафиксирован! ${sum} ₽`);
+            
+            // ✅ 3. ОТПРАВЛЯЕМ В FIREBASE (в фоне)
             try {
                 await db.collection('trips').add({
-                    driverId: currentUser.phone, 
+                    driverId: currentUser.phone,
                     driverName: currentUser.short || currentUser.name,
-                    date: new Date().toISOString().split('T')[0], 
+                    date: newTrip.date,
                     type: 'межгород',
-                    direction, 
-                    earn: sum, 
-                    comment, 
+                    direction: direction,
+                    earn: sum,
+                    comment: comment,
                     timestamp: new Date().toISOString()
                 });
-                document.getElementById('inter-direction').value = ''; 
-                document.getElementById('inter-sum').value = ''; 
-                document.getElementById('inter-comment').value = '';
-                alert(`🚛 Рейс зафиксирован! ${sum} ₽`);
             } catch (error) { 
                 console.error('Ошибка добавления рейса:', error); 
-                alert('❌ Ошибка добавления рейса'); 
+                addToOfflineQueue('add_trip', newTrip);
             }
         };
         
@@ -1509,7 +1563,7 @@
             loadAdminMonthReport();
         }
         
-        // ============ ЗАКРЫТИЕ МЕСЯЦА - ИСПРАВЛЕНО! ============
+        // ============ ЗАКРЫТИЕ МЕСЯЦА - ИСПРАВЛЕНО! ОТЧЕТЫ ИСЧЕЗАЮТ! ============
         window.closeMonth = async function() {
             if (!confirm('⚠️ Закрыть текущий месяц? Все поездки будут архивированы и удалены из отчетов.')) return;
             const month = new Date().toISOString().slice(0, 7);
@@ -1546,7 +1600,7 @@
                 
                 alert(`✅ Месяц ${month} закрыт! Итого: ${total} ₽`);
                 
-                // ✅ ОЧИЩАЕМ ОТЧЕТЫ ПОЛНОСТЬЮ!
+                // ✅ ПОЛНОСТЬЮ ОЧИЩАЕМ ОТЧЕТЫ!
                 document.getElementById('report-month-select').value = '';
                 document.getElementById('admin-daily-report-content').innerHTML = '<p class="text-center py-4">Месяц закрыт. Данные в архиве.</p>';
                 document.getElementById('admin-summary-report-content').innerHTML = '<p class="text-center py-4">Месяц закрыт. Данные в архиве.</p>';
@@ -1652,7 +1706,6 @@
                 return; 
             }
             
-            // Сохраняем текущее состояние перед печатью
             const printWindow = window.open('', '_blank');
             if (!printWindow) {
                 alert('Разрешите всплывающие окна для печати');
@@ -2270,6 +2323,13 @@
                 const s = (diff % 60).toString().padStart(2, '0');
                 document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
             }, 1000);
+        }
+        
+        // Офлайн-очередь для синхронизации
+        function addToOfflineQueue(action, data) {
+            let queue = JSON.parse(localStorage.getItem('shintorg_offline_queue') || '[]');
+            queue.push({ action, data, timestamp: Date.now() });
+            localStorage.setItem('shintorg_offline_queue', JSON.stringify(queue));
         }
         
         window.logout = function() {
