@@ -238,7 +238,7 @@
                     <h5 class="mb-3">Мои поездки</h5>
                     <div style="max-height: 350px; overflow-y: auto;">
                         <table class="table table-sm">
-                            <thead><tr><th>Дата</th><th>Тип</th><th>Часы</th><th>Сумма</th><th>Комментарий</th></tr></thead>
+                            <thead><tr><th>Дата</th><th>Тип</th><th>Сумма</th><th>Комментарий</th></tr></thead>
                             <tbody id="driver-trips-table"></tbody>
                         </table>
                     </div>
@@ -615,15 +615,6 @@
             return dateString;
         }
         
-        function formatDateTimeRange(startTime, endTime) {
-            if (!startTime) return '';
-            const start = new Date(startTime);
-            const end = endTime ? new Date(endTime) : new Date();
-            const startStr = `${start.getHours().toString().padStart(2,'0')}:${start.getMinutes().toString().padStart(2,'0')}`;
-            const endStr = endTime ? `${end.getHours().toString().padStart(2,'0')}:${end.getMinutes().toString().padStart(2,'0')}` : '';
-            return endStr ? `${startStr}-${endStr}` : startStr;
-        }
-        
         // ============ ЗАГРУЗКА ИЗ FIREBASE ============
         async function loadFromFirebase() {
             try {
@@ -959,7 +950,7 @@
             } 
         };
         
-        // ============ СМЕНА - МГНОВЕННОЕ ОТОБРАЖЕНИЕ! ============
+        // ============ СМЕНА ============
         window.startShift = async function() {
             if (!currentUser || !currentUser.id) return;
             shiftActive = true; 
@@ -998,56 +989,57 @@
             else hours = whole + 1;
             if (hours < 1) hours = 1;
             
-            // ✅ ИСПОЛЬЗУЕМ АКТУАЛЬНЫЙ ТАРИФ (БЕРЁМ ПРЯМО СЕЙЧАС!)
-            const rateToUse = currentRate;
-            const earn = Math.round(hours * rateToUse);
+            // ✅ ИСПОЛЬЗУЕМ АКТУАЛЬНЫЙ ТАРИФ (КАК В ТВОЁМ ТЕСТОВОМ КОДЕ!)
+            const earn = Math.round(hours * currentRate);
             const comment = document.getElementById('shift-comment').value || '';
             
-            // ✅ СОЗДАЁМ ОБЪЕКТ ПОЕЗДКИ С ВРЕМЕННЫМ ID
             const newTrip = {
-                id: 'temp_' + Date.now() + '_' + Math.random(),
+                id: Date.now().toString(),
                 driverId: currentUser.phone,
                 driverName: currentUser.short || currentUser.name,
                 date: new Date().toISOString().split('T')[0],
                 type: 'город',
                 hours: hours,
                 earn: earn,
-                rate: rateToUse, // СОХРАНЯЕМ ТАРИФ В ПОЕЗДКУ
                 comment: comment,
-                startTime: shiftStartTime.toISOString(),
-                endTime: new Date().toISOString()
+                location: currentUser.location || '',
+                timestamp: new Date().toISOString()
             };
             
-            // ✅ 1. СРАЗУ ДОБАВЛЯЕМ В ЛОКАЛЬНЫЙ МАССИВ (МГНОВЕННО!)
             LOCAL_TRIPS.push(newTrip);
             
-            // ✅ 2. СРАЗУ ОБНОВЛЯЕМ ТАБЛИЦУ!
-            loadDriverData();
+            const driver = LOCAL_DRIVERS.find(d => d.phone === currentUser.phone);
+            if (driver) {
+                driver.status = 'offline';
+                driver.shiftType = null;
+                driver.shiftStartTime = null;
+                saveToStorage();
+            }
             
-            // ✅ 3. Обновляем статус водителя (локально)
             currentUser.status = 'offline';
             currentUser.shiftType = null;
             currentUser.shiftStartTime = null;
             saveSession();
             
-            // Останавливаем таймер и геолокацию
             if (geoWatchId) { 
                 navigator.geolocation.clearWatch(geoWatchId); 
                 geoWatchId = null; 
             }
-            shiftActive = false; 
+            
+            shiftActive = false;
             clearInterval(shiftTimer);
             
-            // Обновляем UI
             document.getElementById('timer-display').innerText = '00:00:00';
-            document.getElementById('shift-start-btn').classList.remove('hidden'); 
+            document.getElementById('shift-start-btn').classList.remove('hidden');
             document.getElementById('shift-end-btn').classList.add('hidden');
             document.getElementById('shift-comment').value = '';
             document.getElementById('geo-status-block').innerHTML = '<span class="geo-inactive"><i class="bi bi-satellite"></i> Геолокация не активна</span>';
             
-            alert(`✅ Смена завершена! Тариф: ${rateToUse} ₽/ч, Заработано: ${earn} ₽`);
+            saveToStorage();
+            alert(`✅ Смена завершена! Заработано: ${earn} ₽`);
+            loadDriverData();
             
-            // ✅ 4. ОТПРАВЛЯЕМ В FIREBASE (в фоне)
+            // ✅ ОТПРАВЛЯЕМ В FIREBASE
             try {
                 await db.collection('trips').add({
                     driverId: currentUser.phone,
@@ -1056,10 +1048,9 @@
                     type: 'город',
                     hours: hours,
                     earn: earn,
-                    rate: rateToUse,
                     comment: comment,
                     startTime: shiftStartTime.toISOString(),
-                    endTime: newTrip.endTime,
+                    endTime: new Date().toISOString(),
                     timestamp: new Date().toISOString()
                 });
                 
@@ -1071,7 +1062,6 @@
                 
             } catch (error) { 
                 console.error('Ошибка отправки в Firebase:', error);
-                // Если ошибка - добавим в очередь на синхронизацию
                 addToOfflineQueue('add_trip', newTrip);
             }
         };
@@ -1087,31 +1077,28 @@
             }
             const comment = document.getElementById('inter-comment').value || '';
             
-            // ✅ СОЗДАЁМ ОБЪЕКТ ПОЕЗДКИ
             const newTrip = {
-                id: 'temp_' + Date.now() + '_' + Math.random(),
+                id: Date.now().toString(),
                 driverId: currentUser.phone,
                 driverName: currentUser.short || currentUser.name,
                 date: new Date().toISOString().split('T')[0],
                 type: 'межгород',
                 direction: direction,
                 earn: sum,
-                comment: comment
+                comment: comment,
+                timestamp: new Date().toISOString()
             };
             
-            // ✅ 1. СРАЗУ ДОБАВЛЯЕМ В ЛОКАЛЬНЫЙ МАССИВ
             LOCAL_TRIPS.push(newTrip);
-            
-            // ✅ 2. СРАЗУ ОБНОВЛЯЕМ ТАБЛИЦУ
-            loadDriverData();
+            saveToStorage();
             
             document.getElementById('inter-direction').value = ''; 
             document.getElementById('inter-sum').value = ''; 
             document.getElementById('inter-comment').value = '';
             
             alert(`🚛 Рейс зафиксирован! ${sum} ₽`);
+            loadDriverData();
             
-            // ✅ 3. ОТПРАВЛЯЕМ В FIREBASE (в фоне)
             try {
                 await db.collection('trips').add({
                     driverId: currentUser.phone,
@@ -1149,16 +1136,14 @@
             let html = '';
             driverTrips.slice().reverse().forEach(trip => {
                 const dateStr = formatDate(trip.date);
-                const timeStr = trip.startTime ? formatDateTimeRange(trip.startTime, trip.endTime) : '';
                 html += `<tr>
                     <td>${dateStr}</td>
                     <td><span class="badge ${trip.type === 'город' ? 'bg-primary' : 'bg-warning'}">${trip.type}</span></td>
-                    <td>${trip.hours?.toFixed(1) || ''} ч</td>
                     <td>${trip.earn} ₽</td>
                     <td><small>${trip.comment || ''}</small></td>
                 </tr>`;
             });
-            document.getElementById('driver-trips-table').innerHTML = html || '<tr><td colspan="5" class="text-center">Нет поездок</td></tr>';
+            document.getElementById('driver-trips-table').innerHTML = html || '<tr><td colspan="4" class="text-center">Нет поездок</td></tr>';
         }
         
         // ============ СООБЩЕНИЯ ============
@@ -1381,11 +1366,9 @@
             let html = '';
             LOCAL_TRIPS.slice().reverse().forEach(trip => {
                 const dateStr = formatDate(trip.date);
-                const timeStr = trip.startTime ? formatDateTimeRange(trip.startTime, trip.endTime) : '';
                 html += `<tr>
                     <td>${trip.driverName}</td>
                     <td>${dateStr}</td>
-                    <td>${timeStr}</td>
                     <td><span class="badge ${trip.type === 'город' ? 'bg-primary' : 'bg-warning'}">${trip.type}</span></td>
                     <td><input type="number" class="form-control form-control-sm" style="width: 70px;" value="${trip.hours || 0}" id="hours-${trip.id}" step="0.5" ${trip.type !== 'город' ? 'disabled' : ''}></td>
                     <td><input type="number" class="form-control form-control-sm" style="width: 90px;" value="${trip.earn || 0}" id="earn-${trip.id}"></td>
@@ -1393,7 +1376,7 @@
                     <td><button class="btn btn-sm btn-success" onclick="editTrip('${trip.id}')"><i class="bi bi-check-lg"></i></button><button class="btn btn-sm btn-danger" onclick="deleteTrip('${trip.id}')"><i class="bi bi-trash"></i></button></td>
                 </tr>`;
             });
-            document.getElementById('admin-trips-table-mobile').innerHTML = html || '<tr><td colspan="8" class="text-center">Нет поездок</td></tr>';
+            document.getElementById('admin-trips-table-mobile').innerHTML = html || '<tr><td colspan="7" class="text-center">Нет поездок</td></tr>';
         }
         
         window.editTrip = async function(tripId) {
@@ -1470,11 +1453,10 @@
             let dailyHtml = '';
             monthTrips.slice().reverse().forEach(trip => {
                 const dateStr = formatDate(trip.date);
-                const timeStr = trip.startTime ? formatDateTimeRange(trip.startTime, trip.endTime) : '';
                 const route = trip.type === 'город' ? `${trip.hours?.toFixed(1) || ''} ч` : (trip.direction || 'Межгород');
                 dailyHtml += `<div class="trip-row">
                     <div class="d-flex justify-content-between">
-                        <div><div class="fw-bold">${trip.driverName}</div><div class="text-secondary small">${dateStr} ${timeStr}</div></div>
+                        <div><div class="fw-bold">${trip.driverName}</div><div class="text-secondary small">${dateStr}</div></div>
                         <div class="text-end"><span class="badge ${trip.type === 'город' ? 'bg-primary' : 'bg-warning'}">${trip.type}</span><div class="fw-bold text-success">${trip.earn} ₽</div></div>
                     </div>
                     <div class="mt-1"><small class="text-secondary">⏱️ ${route}</small>${trip.comment ? `<div><small class="text-secondary">💬 ${trip.comment}</small></div>` : ''}</div>
@@ -1566,61 +1548,73 @@
             loadAdminMonthReport();
         }
         
-        // ============ ЗАКРЫТИЕ МЕСЯЦА - ИСПРАВЛЕНО! ОТЧЕТЫ ИСЧЕЗАЮТ! ============
-        window.closeMonth = async function() {
+        // ============ ЗАКРЫТИЕ МЕСЯЦА - ИСПРАВЛЕНО! ============
+        window.closeMonth = function() {
             if (!confirm('⚠️ Закрыть текущий месяц? Все поездки будут архивированы и удалены из отчетов.')) return;
+            
             const month = new Date().toISOString().slice(0, 7);
-            try {
-                const tripsSnapshot = await db.collection('trips').where('date', '>=', month + '-01').get();
-                if (tripsSnapshot.empty) { 
-                    alert('❌ Нет поездок за текущий месяц'); 
-                    return; 
+            const monthTrips = LOCAL_TRIPS.filter(t => t.date && t.date.startsWith(month));
+            
+            if (monthTrips.length === 0) {
+                alert('❌ Нет поездок за текущий месяц');
+                return;
+            }
+            
+            const total = monthTrips.reduce((s, t) => s + (t.earn || 0), 0);
+            
+            // Составляем сводку по водителям
+            const summary = {};
+            monthTrips.forEach(t => {
+                if (!summary[t.driverName]) {
+                    summary[t.driverName] = { cityHours: 0, interTrips: 0, totalEarn: 0 };
                 }
-                
-                const monthTrips = []; 
-                const summary = {}; 
-                let total = 0;
-                tripsSnapshot.forEach(doc => {
-                    const trip = doc.data();
-                    monthTrips.push({ id: doc.id, ...trip });
-                    total += trip.earn || 0;
-                    if (!summary[trip.driverName]) summary[trip.driverName] = { cityHours: 0, interTrips: 0, totalEarn: 0 };
-                    if (trip.type === 'город') summary[trip.driverName].cityHours += trip.hours || 0;
-                    else summary[trip.driverName].interTrips += 1;
-                    summary[trip.driverName].totalEarn += trip.earn || 0;
-                });
-                
-                await db.collection('archive').add({ 
-                    month, 
-                    trips: monthTrips, 
-                    summary, 
-                    total, 
-                    closedAt: new Date().toISOString() 
-                });
-                
-                // ✅ УДАЛЯЕМ ПОЕЗДКИ ИЗ ТЕКУЩЕГО МЕСЯЦА
-                tripsSnapshot.forEach(async (doc) => { await doc.ref.delete(); });
-                
-                alert(`✅ Месяц ${month} закрыт! Итого: ${total} ₽`);
-                
-                // ✅ ПОЛНОСТЬЮ ОЧИЩАЕМ ОТЧЕТЫ!
+                if (t.type === 'город') summary[t.driverName].cityHours += t.hours || 0;
+                else summary[t.driverName].interTrips += 1;
+                summary[t.driverName].totalEarn += t.earn || 0;
+            });
+            
+            // Добавляем в архив
+            LOCAL_ARCHIVE.push({
+                month: month,
+                trips: JSON.parse(JSON.stringify(monthTrips)),
+                summary: summary,
+                total: total,
+                closedAt: new Date().toISOString()
+            });
+            
+            // УДАЛЯЕМ ВСЕ ПОЕЗДКИ ЗА ЭТОТ МЕСЯЦ
+            LOCAL_TRIPS = LOCAL_TRIPS.filter(t => !t.date || !t.date.startsWith(month));
+            saveToStorage();
+            
+            alert(`✅ Месяц ${month} закрыт! Итого: ${total} ₽`);
+            
+            // Обновляем все интерфейсы
+            if (currentRole === 'admin') {
+                loadAdminData();
+                // Очищаем выбранный месяц в отчетах
                 document.getElementById('report-month-select').value = '';
-                document.getElementById('admin-daily-report-content').innerHTML = '<p class="text-center py-4">Месяц закрыт. Данные в архиве.</p>';
-                document.getElementById('admin-summary-report-content').innerHTML = '<p class="text-center py-4">Месяц закрыт. Данные в архиве.</p>';
+                // Очищаем содержимое отчетов
+                document.getElementById('admin-daily-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет поездок за этот месяц</p>';
+                document.getElementById('admin-summary-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет данных</p>';
                 document.getElementById('admin-total-hours').innerHTML = '0 ч';
                 document.getElementById('admin-total-inter').innerHTML = '0';
                 document.getElementById('admin-total-earn').innerHTML = '0 ₽';
-                
-                document.getElementById('curator-daily-report-content').innerHTML = '<p class="text-center py-4">Месяц закрыт. Данные в архиве.</p>';
-                document.getElementById('curator-summary-report-content').innerHTML = '<p class="text-center py-4">Месяц закрыт. Данные в архиве.</p>';
+            }
+            
+            if (currentRole === 'curator') {
+                loadCuratorData();
+                // Очищаем выбранный месяц в отчетах
+                document.getElementById('curator-report-month').value = '';
+                // Очищаем содержимое отчетов
+                document.getElementById('curator-daily-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет поездок за этот месяц</p>';
+                document.getElementById('curator-summary-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет данных</p>';
                 document.getElementById('curator-total-hours').innerHTML = '0 ч';
                 document.getElementById('curator-total-inter').innerHTML = '0';
                 document.getElementById('curator-total-earn').innerHTML = '0 ₽';
-                
-            } catch (error) { 
-                console.error('Ошибка закрытия месяца:', error); 
-                alert('❌ Ошибка закрытия месяца'); 
             }
+            
+            updateMonthSelectors();
+            updateArchiveSelectors();
         };
         
         // ============ ЭКСПОРТ В EXCEL ============
@@ -1638,12 +1632,11 @@
                 alert('Нет данных для экспорта'); 
                 return; 
             }
-            let csv = "Водитель,Дата,Время,Тип,Маршрут,Сумма,Комментарий\n";
+            let csv = "Водитель,Дата,Тип,Маршрут,Сумма,Комментарий\n";
             monthTrips.forEach(t => {
                 const dateStr = formatDate(t.date);
-                const timeStr = t.startTime ? formatDateTimeRange(t.startTime, t.endTime) : '';
                 const route = t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород');
-                csv += `${t.driverName},${dateStr},${timeStr},${t.type},${route},${t.earn},${t.comment || ''}\n`;
+                csv += `${t.driverName},${dateStr},${t.type},${route},${t.earn},${t.comment || ''}\n`;
             });
             const blob = new Blob(["\uFEFF" + csv], {type: 'text/csv'});
             const url = URL.createObjectURL(blob); 
@@ -1718,9 +1711,8 @@
             let tableHtml = '';
             monthTrips.slice().reverse().forEach(t => {
                 const dateStr = formatDate(t.date);
-                const timeStr = t.startTime ? formatDateTimeRange(t.startTime, t.endTime) : '';
                 const route = t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород');
-                tableHtml += `<tr><td>${t.driverName}</td><td>${dateStr}</td><td>${timeStr}</td><td>${t.type}</td><td>${route}</td><td>${t.earn} ₽</td><td>${t.comment || ''}</td></tr>`;
+                tableHtml += `<tr><td>${t.driverName}</td><td>${dateStr}</td><td>${t.type}</td><td>${route}</td><td>${t.earn} ₽</td><td>${t.comment || ''}</td></tr>`;
             });
             
             printWindow.document.write(`
@@ -1743,7 +1735,6 @@
                         <tr>
                             <th>Водитель</th>
                             <th>Дата</th>
-                            <th>Время</th>
                             <th>Тип</th>
                             <th>Маршрут</th>
                             <th>Сумма</th>
@@ -1980,12 +1971,11 @@
             try {
                 const doc = await db.collection('archive').doc(archiveId).get();
                 const arch = doc.data();
-                let csv = "Водитель,Дата,Время,Тип,Часы/Маршрут,Сумма,Комментарий\n";
+                let csv = "Водитель,Дата,Тип,Часы/Маршрут,Сумма,Комментарий\n";
                 arch.trips.forEach(t => {
                     const dateStr = formatDate(t.date);
-                    const timeStr = t.startTime ? formatDateTimeRange(t.startTime, t.endTime) : '';
                     const details = t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород');
-                    csv += `${t.driverName},${dateStr},${timeStr},${t.type},${details},${t.earn},${t.comment || ''}\n`;
+                    csv += `${t.driverName},${dateStr},${t.type},${details},${t.earn},${t.comment || ''}\n`;
                 });
                 csv += `\nОБЩИЙ ИТОГ,,,${arch.total} ₽`;
                 const blob = new Blob(["\uFEFF" + csv], {type: 'text/csv'});
@@ -2008,9 +1998,8 @@
                 let tableHtml = '';
                 arch.trips.forEach(t => {
                     const dateStr = formatDate(t.date);
-                    const timeStr = t.startTime ? formatDateTimeRange(t.startTime, t.endTime) : '';
                     const route = t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород');
-                    tableHtml += `<tr><td>${t.driverName}</td><td>${dateStr}</td><td>${timeStr}</td><td>${t.type}</td><td>${route}</td><td>${t.earn} ₽</td><td>${t.comment || ''}</td></tr>`;
+                    tableHtml += `<tr><td>${t.driverName}</td><td>${dateStr}</td><td>${t.type}</td><td>${route}</td><td>${t.earn} ₽</td><td>${t.comment || ''}</td></tr>`;
                 });
                 let summaryHtml = '';
                 Object.keys(arch.summary || {}).forEach(name => {
@@ -2046,7 +2035,6 @@
                             <tr>
                                 <th>Водитель</th>
                                 <th>Дата</th>
-                                <th>Время</th>
                                 <th>Тип</th>
                                 <th>Маршрут</th>
                                 <th>Сумма</th>
@@ -2138,11 +2126,10 @@
             let dailyHtml = '';
             monthTrips.slice().reverse().forEach(trip => {
                 const dateStr = formatDate(trip.date);
-                const timeStr = trip.startTime ? formatDateTimeRange(trip.startTime, trip.endTime) : '';
                 const route = trip.type === 'город' ? `${trip.hours?.toFixed(1) || ''} ч` : (trip.direction || 'Межгород');
                 dailyHtml += `<div class="trip-row">
                     <div class="d-flex justify-content-between">
-                        <div><div class="fw-bold">${trip.driverName}</div><div class="text-secondary small">${dateStr} ${timeStr}</div></div>
+                        <div><div class="fw-bold">${trip.driverName}</div><div class="text-secondary small">${dateStr}</div></div>
                         <div class="text-end"><span class="badge ${trip.type === 'город' ? 'bg-primary' : 'bg-warning'}">${trip.type}</span><div class="fw-bold text-success">${trip.earn} ₽</div></div>
                     </div>
                     <div class="mt-1"><small class="text-secondary">⏱️ ${route}</small>${trip.comment ? `<div><small class="text-secondary">💬 ${trip.comment}</small></div>` : ''}</div>
@@ -2328,7 +2315,6 @@
             }, 1000);
         }
         
-        // Офлайн-очередь для синхронизации
         function addToOfflineQueue(action, data) {
             let queue = JSON.parse(localStorage.getItem('shintorg_offline_queue') || '[]');
             queue.push({ action, data, timestamp: Date.now() });
