@@ -3,11 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Шинторг • Офлайн CRM</title>
+    <title>Шинторг • Учет смен</title>
+    
+    <!-- FAVICON - ИКОНКА ДЛЯ МОБИЛЬНЫХ -->
+    <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230f5e7e'/%3E%3Cpath d='M30 35 L70 35 L65 65 L35 65 Z' fill='white'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230f5e7e'/%3E%3Cpath d='M10 12 L22 12 L20 22 L12 22 Z' fill='white'/%3E%3C/svg%3E">
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%D0%A8%D0%B8%D0%BD%D1%82%D0%BE%D1%80%D0%B3%22%2C%22short_name%22%3A%22%D0%A8%D0%B8%D0%BD%D1%82%D0%BE%D1%80%D0%B3%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f5e7e%22%2C%22theme_color%22%3A%22%230f5e7e%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data:image/svg%2Bxml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='86' fill='%230f5e7e'/%3E%3Cpath d='M66 66 L126 66 L116 126 L76 126 Z' fill='white'/%3E%3C/svg%3E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image/svg%2Bxml%22%7D%5D%7D">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f5e7e">
     
     <!-- Bootstrap 5 + Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     
     <!-- Leaflet для карт -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -33,7 +45,7 @@
         .mobile-container {
             max-width: 450px;
             width: 100%;
-            background: #f8fcff;
+            background: #f5f9fc;
             min-height: 100vh;
             box-shadow: 0 25px 50px -10px rgba(0,0,0,0.4);
             position: relative;
@@ -126,30 +138,6 @@
         }
         
         .mobile-tab.active {
-            background: #0f5e7e;
-            color: white;
-        }
-        
-        .report-tabs {
-            display: flex;
-            background: #f0f7fc;
-            border-radius: 50px;
-            margin-bottom: 20px;
-            padding: 4px;
-        }
-        
-        .report-tab {
-            flex: 1;
-            text-align: center;
-            padding: 12px 6px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        
-        .report-tab.active {
             background: #0f5e7e;
             color: white;
         }
@@ -328,10 +316,10 @@
                 <!-- ВОДИТЕЛЬ -->
                 <div id="driver-login-panel">
                     <div class="mb-3">
-                        <input type="text" class="form-control form-control-lg rounded-pill" id="driver-login" placeholder="Телефон / Логин" value="+79991234567">
+                        <input type="text" class="form-control form-control-lg rounded-pill" id="driver-login" placeholder="Телефон / Логин">
                     </div>
                     <div class="mb-4">
-                        <input type="password" class="form-control form-control-lg rounded-pill" id="driver-password" placeholder="Пароль" value="123456">
+                        <input type="password" class="form-control form-control-lg rounded-pill" id="driver-password" placeholder="Пароль">
                     </div>
                     <button class="btn btn-primary mobile-btn" onclick="loginDriver()">
                         <i class="bi bi-box-arrow-in-right"></i> Войти
@@ -443,7 +431,7 @@
                 <span class="badge bg-white text-dark p-3 rounded-pill" id="driver-name-badge"></span>
             </div>
             
-            <!-- СТАТИСТИКА ВОДИТЕЛЯ -->
+            <!-- СТАТИСТИКА -->
             <div class="mobile-card bg-white">
                 <div class="row">
                     <div class="col-6">
@@ -462,7 +450,7 @@
             <!-- СООБЩЕНИЯ -->
             <div id="driver-messages-container"></div>
             
-            <!-- ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ -->
+            <!-- ПЕРЕКЛЮЧЕНИЕ -->
             <div class="d-flex gap-2 mx-3 my-3">
                 <button class="btn btn-primary flex-fill rounded-pill" onclick="switchDriverMode('city')">
                     <i class="bi bi-building"></i> Город
@@ -486,7 +474,7 @@
                     </button>
                     
                     <div class="mt-3">
-                        <textarea class="form-control rounded-4" id="shift-comment" rows="2" placeholder="Комментарий к смене..."></textarea>
+                        <textarea class="form-control rounded-4" id="shift-comment" rows="2" placeholder="Комментарий..."></textarea>
                     </div>
                     
                     <div class="mt-3 p-3 rounded-4 text-center" id="geo-status-block">
@@ -505,7 +493,7 @@
                         <input type="number" class="form-control form-control-lg rounded-pill" id="inter-sum" placeholder="Сумма ставки">
                     </div>
                     <div class="mb-3">
-                        <textarea class="form-control rounded-4" id="inter-comment" rows="2" placeholder="Комментарий к рейсу..."></textarea>
+                        <textarea class="form-control rounded-4" id="inter-comment" rows="2" placeholder="Комментарий..."></textarea>
                     </div>
                     <button class="btn btn-warning mobile-btn" onclick="addIntercityTrip()">
                         <i class="bi bi-truck"></i> Поехал!
@@ -513,7 +501,7 @@
                 </div>
             </div>
             
-            <!-- ИСТОРИЯ ПОЕЗДОК -->
+            <!-- ИСТОРИЯ -->
             <div class="mobile-card">
                 <h5 class="mb-3"><i class="bi bi-clock-history"></i> Мои поездки</h5>
                 <div style="max-height: 350px; overflow-y: auto;">
@@ -538,7 +526,7 @@
             </div>
         </div>
         
-        <!-- ========== КАБИНЕТ АДМИНИСТРАТОРА ========== -->
+        <!-- ========== КАБИНЕТ АДМИНА ========== -->
         <div id="admin-cabinet" class="hidden">
             <div class="app-header d-flex justify-content-between align-items-center">
                 <h4 class="mb-0"><i class="bi bi-shield-lock"></i> АДМИН</h4>
@@ -579,11 +567,10 @@
                 <div class="mobile-tab" onclick="switchAdminTab('settings')">Настройки</div>
             </div>
             
-            <!-- ===== ВКЛАДКА: АКТИВНЫЕ ВОДИТЕЛИ ===== -->
+            <!-- АКТИВНЫЕ ВОДИТЕЛИ -->
             <div id="admin-drivers-tab">
                 <div class="mobile-card">
                     <h5 class="mb-3"><i class="bi bi-people-fill"></i> Активные водители</h5>
-                    <p class="text-secondary small">Отображаются водители, которые начинали смену в этом месяце</p>
                     <div style="max-height: 400px; overflow-y: auto;">
                         <table class="table table-sm table-hover">
                             <thead>
@@ -617,7 +604,7 @@
                 </div>
             </div>
             
-            <!-- ===== ВКЛАДКА: ВСЕ ВОДИТЕЛИ ===== -->
+            <!-- ВСЕ ВОДИТЕЛИ -->
             <div id="admin-all-drivers-tab" class="hidden">
                 <div class="mobile-card">
                     <h5 class="mb-3"><i class="bi bi-database"></i> Все зарегистрированные водители</h5>
@@ -638,7 +625,7 @@
                 </div>
             </div>
             
-            <!-- ===== ВКЛАДКА: ПОЕЗДКИ ===== -->
+            <!-- ПОЕЗДКИ -->
             <div id="admin-trips-tab" class="hidden">
                 <div class="mobile-card">
                     <h5 class="mb-3"><i class="bi bi-pencil-square"></i> Редактирование поездок</h5>
@@ -661,14 +648,13 @@
                 </div>
             </div>
             
-            <!-- ===== ВКЛАДКА: ОТЧЕТЫ ===== -->
+            <!-- ОТЧЕТЫ -->
             <div id="admin-reports-tab" class="hidden">
                 <div class="mobile-card">
                     <h5 class="mb-3 text-center">
                         <i class="bi bi-calendar-check"></i> Отчет по месяцам
                     </h5>
                     
-                    <!-- ВЫБОР МЕСЯЦА -->
                     <div class="d-flex gap-2 mb-4">
                         <select class="form-select rounded-pill" id="report-month-select" onchange="loadAdminMonthReport()">
                             <option value="">Выберите месяц</option>
@@ -678,7 +664,6 @@
                         </button>
                     </div>
                     
-                    <!-- ВКЛАДКИ ОТЧЕТОВ -->
                     <div class="report-tabs mb-3">
                         <div class="report-tab active" onclick="switchAdminReportTab('daily')">
                             <i class="bi bi-list-ul"></i> Кто когда работал
@@ -688,49 +673,24 @@
                         </div>
                     </div>
                     
-                    <!-- ПОСМЕННЫЙ ОТЧЕТ -->
                     <div id="admin-daily-report-container">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold">Поездки за месяц</h6>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-success" onclick="exportDailyReportToExcel()">
-                                    <i class="bi bi-file-earmark-excel"></i>
-                                </button>
-                                <button class="btn btn-sm btn-primary" onclick="printDailyReport()">
-                                    <i class="bi bi-printer"></i>
-                                </button>
-                            </div>
-                        </div>
                         <div id="admin-daily-report-content" style="max-height: 400px; overflow-y: auto;"></div>
                     </div>
                     
-                    <!-- СВОДНЫЙ ОТЧЕТ -->
                     <div id="admin-summary-report-container" class="hidden">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold">Сводка по водителям</h6>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-success" onclick="exportSummaryReportToExcel()">
-                                    <i class="bi bi-file-earmark-excel"></i>
-                                </button>
-                                <button class="btn btn-sm btn-primary" onclick="printSummaryReport()">
-                                    <i class="bi bi-printer"></i>
-                                </button>
-                            </div>
-                        </div>
                         <div id="admin-summary-report-content" style="max-height: 400px; overflow-y: auto;"></div>
                         
-                        <!-- ОБЩИЙ ИТОГ -->
                         <div class="summary-card mt-3">
                             <div class="row g-2">
                                 <div class="col-6">
                                     <div class="summary-item">
-                                        <small class="text-secondary">Всего часов (город)</small>
+                                        <small class="text-secondary">Всего часов</small>
                                         <h4 class="text-primary fw-bold mb-0" id="admin-total-hours">0 ч</h4>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="summary-item">
-                                        <small class="text-secondary">Всего поездок (МГ)</small>
+                                        <small class="text-secondary">Всего поездок МГ</small>
                                         <h4 class="text-warning fw-bold mb-0" id="admin-total-inter">0</h4>
                                     </div>
                                 </div>
@@ -744,7 +704,6 @@
                         </div>
                     </div>
                     
-                    <!-- КНОПКА ЗАКРЫТИЯ МЕСЯЦА -->
                     <div class="mt-4">
                         <button class="btn btn-warning mobile-btn" onclick="closeMonth()">
                             <i class="bi bi-file-earmark-check"></i> Закрыть месяц
@@ -753,30 +712,15 @@
                 </div>
             </div>
             
-            <!-- ===== ВКЛАДКА: АРХИВ ===== -->
+            <!-- АРХИВ -->
             <div id="admin-archive-tab" class="hidden">
                 <div class="mobile-card">
                     <h5 class="mb-3"><i class="bi bi-archive"></i> Архив закрытых месяцев</h5>
-                    
-                    <!-- ПОИСК ПО АРХИВУ -->
-                    <div class="d-flex gap-2 mb-4">
-                        <select class="form-select rounded-pill" id="admin-archive-month-select" onchange="loadAdminArchiveMonth()">
-                            <option value="">Выберите месяц</option>
-                        </select>
-                        <button class="btn btn-outline-primary rounded-pill px-4" onclick="loadAdminArchiveMonth()">
-                            <i class="bi bi-search"></i>
-                        </button>
-                        <button class="btn btn-outline-danger rounded-pill px-4" onclick="clearAllArchives()">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- СОДЕРЖИМОЕ АРХИВА -->
                     <div id="admin-archive-content" style="max-height: 500px; overflow-y: auto;"></div>
                 </div>
             </div>
             
-            <!-- ===== ВКЛАДКА: НАСТРОЙКИ ===== -->
+            <!-- НАСТРОЙКИ -->
             <div id="admin-settings-tab" class="hidden">
                 <div class="mobile-card">
                     <h5 class="mb-3"><i class="bi bi-tag"></i> Тариф по городу</h5>
@@ -846,7 +790,6 @@
                 </div>
             </div>
             
-            <!-- ВОДИТЕЛИ НА ЛИНИИ -->
             <div class="mobile-card">
                 <h5 class="mb-3"><i class="bi bi-people"></i> Водители на линии</h5>
                 <div style="max-height: 300px; overflow-y: auto;">
@@ -864,13 +807,11 @@
                 </div>
             </div>
             
-            <!-- ОТЧЕТЫ КУРАТОРА -->
             <div class="mobile-tabs">
                 <div class="mobile-tab active" onclick="switchCuratorTab('reports')">Отчеты</div>
                 <div class="mobile-tab" onclick="switchCuratorTab('archive')">Архив</div>
             </div>
             
-            <!-- ВКЛАДКА ОТЧЕТОВ -->
             <div id="curator-reports-tab">
                 <div class="mobile-card">
                     <h5 class="text-center mb-3">Отчет по месяцам</h5>
@@ -884,108 +825,52 @@
                         </button>
                     </div>
                     
-                    <div class="report-tabs mb-3">
-                        <div class="report-tab active" onclick="switchCuratorReportTab('daily')">
-                            <i class="bi bi-list-ul"></i> Кто когда работал
-                        </div>
-                        <div class="report-tab" onclick="switchCuratorReportTab('summary')">
-                            <i class="bi bi-pie-chart"></i> Итоги по водителям
-                        </div>
-                    </div>
+                    <div id="curator-monthly-summary"></div>
                     
-                    <div id="curator-daily-report-container">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold">Поездки за месяц</h6>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-success" onclick="exportCuratorDailyReportToExcel()">
-                                    <i class="bi bi-file-earmark-excel"></i>
-                                </button>
-                                <button class="btn btn-sm btn-primary" onclick="printCuratorDailyReport()">
-                                    <i class="bi bi-printer"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="curator-daily-report-content" style="max-height: 400px; overflow-y: auto;"></div>
-                    </div>
-                    
-                    <div id="curator-summary-report-container" class="hidden">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold">Сводка по водителям</h6>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-success" onclick="exportCuratorSummaryReportToExcel()">
-                                    <i class="bi bi-file-earmark-excel"></i>
-                                </button>
-                                <button class="btn btn-sm btn-primary" onclick="printCuratorSummaryReport()">
-                                    <i class="bi bi-printer"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="curator-summary-report-content" style="max-height: 400px; overflow-y: auto;"></div>
-                        
-                        <div class="summary-card mt-3">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <div class="summary-item">
-                                        <small class="text-secondary">Всего часов (город)</small>
-                                        <h4 class="text-primary fw-bold mb-0" id="curator-total-hours">0 ч</h4>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="summary-item">
-                                        <small class="text-secondary">Всего поездок (МГ)</small>
-                                        <h4 class="text-warning fw-bold mb-0" id="curator-total-inter">0</h4>
-                                    </div>
-                                </div>
-                                <div class="col-12 mt-2">
-                                    <div class="summary-item bg-success bg-opacity-10">
-                                        <small class="text-success">ОБЩИЙ ЗАРАБОТОК</small>
-                                        <h3 class="text-success fw-bold mb-0" id="curator-total-earn">0 ₽</h3>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <button class="btn btn-warning mobile-btn" onclick="closeMonth()">
+                    <div class="mt-3 text-center">
+                        <h4 class="fw-bold text-success" id="curator-month-total">0 ₽</h4>
+                        <button class="btn btn-warning mobile-btn mt-3" onclick="closeMonth()">
                             <i class="bi bi-file-earmark-check"></i> Закрыть месяц
                         </button>
                     </div>
                 </div>
             </div>
             
-            <!-- ВКЛАДКА АРХИВА КУРАТОРА -->
             <div id="curator-archive-tab" class="hidden">
                 <div class="mobile-card">
                     <h5><i class="bi bi-archive"></i> Архив закрытых месяцев</h5>
-                    
-                    <div class="d-flex gap-2 mb-4">
-                        <select class="form-select rounded-pill" id="curator-archive-month-select" onchange="loadCuratorArchiveMonth()">
-                            <option value="">Выберите месяц</option>
-                        </select>
-                        <button class="btn btn-outline-primary rounded-pill px-4" onclick="loadCuratorArchiveMonth()">
-                            <i class="bi bi-search"></i>
-                        </button>
-                    </div>
-                    
                     <div id="curator-archive-content" style="max-height: 500px; overflow-y: auto;"></div>
                 </div>
             </div>
         </div>
         
-        <!-- ========== МОДАЛЬНОЕ ОКНО КАРТЫ ========== -->
-        <div id="map-modal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: flex; flex-direction: column;">
+        <!-- ========== КАРТА ========== -->
+        <div id="map-modal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 2000;">
             <div style="padding: 16px; background: #0f5e7e; color: white; display: flex; justify-content: space-between;">
                 <h5 class="mb-0" id="map-driver-name"></h5>
                 <button class="btn btn-sm btn-light rounded-pill px-4" onclick="closeMap()">
                     <i class="bi bi-x-lg"></i> Закрыть
                 </button>
             </div>
-            <div id="driver-map" style="flex: 1; width: 100%;"></div>
+            <div id="driver-map" style="height: 90vh; width: 100%;"></div>
         </div>
     </div>
 
     <script>
+        // 🔥 ТВОИ FIREBASE КЛЮЧИ!
+        const firebaseConfig = {
+            apiKey: "AIzaSyASdFFIJbPOvGCs0IP66pojpFfCO1FU81A",
+            authDomain: "shintorg86-crm.firebaseapp.com",
+            projectId: "shintorg86-crm",
+            storageBucket: "shintorg86-crm.firebasestorage.app",
+            messagingSenderId: "501323511960",
+            appId: "1:501323511960:web:0cb6d55502d82aaf58f8ed"
+        };
+
+        // ИНИЦИАЛИЗАЦИЯ FIREBASE
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
         // ============ ГЛОБАЛЬНЫЕ ДАННЫЕ ============
         let LOCAL_DRIVERS = [];
         let LOCAL_TRIPS = [];
@@ -995,8 +880,6 @@
         // Учетные данные
         let ADMIN_CRED = { login: 'admin', password: 'adminshintorg86' };
         let CURATOR_CRED = { login: 'curator', password: 'curator123' };
-        
-        // СЕКРЕТНЫЙ КЛЮЧ
         const SECRET_ADMIN_KEY = 'shintorg2024super';
         
         // Текущий пользователь
@@ -1012,292 +895,247 @@
         let currentMap = null;
         let mapMarker = null;
         
-        // Офлайн-очередь
-        let offlineQueue = [];
+        // Подписки Firebase
+        let unsubscribeDrivers = null;
+        let unsubscribeTrips = null;
+        let unsubscribeMessages = null;
+        let unsubscribeArchive = null;
         
-        // Текущий выбранный месяц
-        let currentReportMonth = null;
-        
-        // ============ ИНИЦИАЛИЗАЦИЯ ============
-        window.onload = function() {
-            loadFromStorage();
-            setupOfflineDetection();
-            setupAutoSync();
-            
-            document.getElementById('loading-screen').classList.add('hidden');
-            document.getElementById('login-screen').classList.remove('hidden');
-            document.getElementById('rate-display').innerHTML = `${currentRate} ₽/ч`;
-            
-            // Тестовые данные
-            if (LOCAL_DRIVERS.length === 0) {
-                LOCAL_DRIVERS.push({
-                    id: '1',
-                    name: 'Иванов Иван Иванович',
-                    short: 'Иванов И.И.',
-                    phone: '+79991234567',
-                    password: '123456',
-                    status: 'offline',
-                    shiftType: null,
-                    shiftStartTime: null,
-                    location: '',
-                    lat: 61.254,
-                    lng: 73.396,
-                    lastSeen: null,
-                    registeredAt: '2026-02-01'
-                });
-                
-                LOCAL_DRIVERS.push({
-                    id: '2',
-                    name: 'Петров Петр Петрович',
-                    short: 'Петров П.П.',
-                    phone: '+79997654321',
-                    password: 'petrov86',
-                    status: 'offline',
-                    shiftType: null,
-                    shiftStartTime: null,
-                    location: '',
-                    lat: null,
-                    lng: null,
-                    lastSeen: null,
-                    registeredAt: '2026-02-01'
-                });
-            }
-            
-            if (LOCAL_TRIPS.length === 0) {
-                LOCAL_TRIPS.push({
-                    id: '1',
-                    driverId: '+79991234567',
-                    driverName: 'Иванов И.И.',
-                    date: '2026-02-10',
-                    type: 'город',
-                    hours: 2.5,
-                    earn: 3500,
-                    comment: 'Уборка снега'
-                });
-                
-                LOCAL_TRIPS.push({
-                    id: '2',
-                    driverId: '+79991234567',
-                    driverName: 'Иванов И.И.',
-                    date: '2026-02-12',
-                    type: 'межгород',
-                    direction: 'Лангепас',
-                    earn: 6000,
-                    comment: 'Шины'
-                });
-                
-                LOCAL_TRIPS.push({
-                    id: '3',
-                    driverId: '+79997654321',
-                    driverName: 'Петров П.П.',
-                    date: '2026-02-11',
-                    type: 'межгород',
-                    direction: 'Когалым',
-                    earn: 5400,
-                    comment: 'Доставка'
-                });
-            }
-            
-            saveToStorage();
-            updateMonthSelectors();
-            updateArchiveSelectors();
-        };
-        
-        // ============ localStorage ============
-        function loadFromStorage() {
+        // ============ ЗАГРУЗКА ИЗ FIREBASE ============
+        async function loadFromFirebase() {
             try {
-                const drivers = localStorage.getItem('shintorg_drivers');
-                const trips = localStorage.getItem('shintorg_trips');
-                const messages = localStorage.getItem('shintorg_messages');
-                const archive = localStorage.getItem('shintorg_archive');
-                const rate = localStorage.getItem('shintorg_rate');
+                // Загружаем водителей
+                const driversSnapshot = await db.collection('drivers').get();
+                LOCAL_DRIVERS = [];
+                driversSnapshot.forEach(doc => {
+                    LOCAL_DRIVERS.push({ id: doc.id, ...doc.data() });
+                });
                 
-                if (drivers) LOCAL_DRIVERS = JSON.parse(drivers);
-                if (trips) LOCAL_TRIPS = JSON.parse(trips);
-                if (messages) LOCAL_MESSAGES = JSON.parse(messages);
-                if (archive) LOCAL_ARCHIVE = JSON.parse(archive);
-                if (rate) currentRate = parseFloat(rate);
-            } catch (e) {
-                console.error('Ошибка загрузки:', e);
+                // Загружаем поездки
+                const tripsSnapshot = await db.collection('trips').orderBy('date', 'desc').get();
+                LOCAL_TRIPS = [];
+                tripsSnapshot.forEach(doc => {
+                    LOCAL_TRIPS.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Загружаем сообщения
+                const messagesSnapshot = await db.collection('messages').get();
+                LOCAL_MESSAGES = [];
+                messagesSnapshot.forEach(doc => {
+                    LOCAL_MESSAGES.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Загружаем архив
+                const archiveSnapshot = await db.collection('archive').orderBy('month', 'desc').get();
+                LOCAL_ARCHIVE = [];
+                archiveSnapshot.forEach(doc => {
+                    LOCAL_ARCHIVE.push({ id: doc.id, ...doc.data() });
+                });
+                
+                console.log('✅ Данные загружены из Firebase');
+            } catch (error) {
+                console.error('❌ Ошибка загрузки из Firebase:', error);
             }
         }
         
-        function saveToStorage() {
-            localStorage.setItem('shintorg_drivers', JSON.stringify(LOCAL_DRIVERS));
-            localStorage.setItem('shintorg_trips', JSON.stringify(LOCAL_TRIPS));
-            localStorage.setItem('shintorg_messages', JSON.stringify(LOCAL_MESSAGES));
-            localStorage.setItem('shintorg_archive', JSON.stringify(LOCAL_ARCHIVE));
-            localStorage.setItem('shintorg_rate', currentRate.toString());
-        }
-        
-        // ============ БЕКАП ============
-        window.exportBackup = function() {
-            const backup = {
-                drivers: LOCAL_DRIVERS,
-                trips: LOCAL_TRIPS,
-                messages: LOCAL_MESSAGES,
-                archive: LOCAL_ARCHIVE,
-                rate: currentRate,
-                adminCred: ADMIN_CRED,
-                curatorCred: CURATOR_CRED,
-                timestamp: new Date().toISOString()
-            };
+        // ============ ПОДПИСКИ НА ОБНОВЛЕНИЯ ============
+        function subscribeToDrivers() {
+            if (unsubscribeDrivers) unsubscribeDrivers();
             
-            const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `shintorg_backup_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            alert('✅ Бекап сохранен');
-        };
-        
-        window.importBackup = function() {
-            const fileInput = document.getElementById('backup-file');
-            if (!fileInput.files[0]) {
-                alert('❌ Выберите файл');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const backup = JSON.parse(e.target.result);
-                    
-                    if (backup.drivers) LOCAL_DRIVERS = backup.drivers;
-                    if (backup.trips) LOCAL_TRIPS = backup.trips;
-                    if (backup.messages) LOCAL_MESSAGES = backup.messages;
-                    if (backup.archive) LOCAL_ARCHIVE = backup.archive;
-                    if (backup.rate) currentRate = backup.rate;
-                    if (backup.adminCred) ADMIN_CRED = backup.adminCred;
-                    if (backup.curatorCred) CURATOR_CRED = backup.curatorCred;
-                    
-                    saveToStorage();
-                    alert('✅ Бекап восстановлен');
-                    
-                    if (currentRole === 'admin') loadAdminData();
-                    if (currentRole === 'curator') loadCuratorData();
-                } catch (e) {
-                    alert('❌ Ошибка восстановления');
+            unsubscribeDrivers = db.collection('drivers').onSnapshot((snapshot) => {
+                LOCAL_DRIVERS = [];
+                snapshot.forEach(doc => {
+                    LOCAL_DRIVERS.push({ id: doc.id, ...doc.data() });
+                });
+                
+                if (currentRole === 'admin') {
+                    loadAdminDrivers();
+                    loadAllDrivers();
+                    loadMessageDriversList();
+                } else if (currentRole === 'curator') {
+                    loadCuratorDrivers();
+                    document.getElementById('curator-active-count').innerHTML = LOCAL_DRIVERS.filter(d => d.status === 'active').length;
+                    document.getElementById('curator-city-count').innerHTML = LOCAL_DRIVERS.filter(d => d.status === 'active' && d.shiftType === 'city').length;
                 }
-            };
-            reader.readAsText(fileInput.files[0]);
-        };
-        
-        // ============ СЕКРЕТНЫЙ ВХОД ============
-        window.showAdminSecret = function() {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('admin-secret-screen').classList.remove('hidden');
-        };
-        
-        window.resetAdminWithSecret = function() {
-            const secretKey = document.getElementById('admin-secret-key').value;
-            const newPass = document.getElementById('admin-new-password-secret').value;
-            
-            if (secretKey !== SECRET_ADMIN_KEY) {
-                alert('❌ Неверный секретный ключ');
-                return;
-            }
-            
-            if (newPass) {
-                ADMIN_CRED.password = newPass;
-                saveToStorage();
-                alert('✅ Пароль администратора изменен! Теперь войдите с новым паролем.');
-            }
-            
-            backToLogin();
-        };
-        
-        // ============ ОФЛАЙН ============
-        function setupOfflineDetection() {
-            window.addEventListener('online', function() {
-                document.getElementById('offline-indicator').style.display = 'none';
-                processOfflineQueue();
             });
-            
-            window.addEventListener('offline', function() {
-                document.getElementById('offline-indicator').style.display = 'block';
-            });
-            
-            if (!navigator.onLine) {
-                document.getElementById('offline-indicator').style.display = 'block';
-            }
         }
         
-        function setupAutoSync() {
-            setInterval(() => {
-                if (navigator.onLine) {
-                    processOfflineQueue();
+        function subscribeToTrips() {
+            if (unsubscribeTrips) unsubscribeTrips();
+            
+            unsubscribeTrips = db.collection('trips').orderBy('date', 'desc').onSnapshot((snapshot) => {
+                LOCAL_TRIPS = [];
+                snapshot.forEach(doc => {
+                    LOCAL_TRIPS.push({ id: doc.id, ...doc.data() });
+                });
+                
+                if (currentRole === 'admin') {
+                    loadAdminTrips();
+                    loadAdminReports();
+                } else if (currentRole === 'curator') {
+                    loadCuratorReports();
                 }
-            }, 30000);
+                
+                if (currentRole === 'driver' && currentUser) {
+                    loadDriverData();
+                }
+            });
         }
         
-        function processOfflineQueue() {
-            if (!navigator.onLine || offlineQueue.length === 0) return;
+        function subscribeToMessages() {
+            if (unsubscribeMessages) unsubscribeMessages();
             
-            document.getElementById('sync-indicator').style.display = 'block';
+            unsubscribeMessages = db.collection('messages').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
+                LOCAL_MESSAGES = [];
+                snapshot.forEach(doc => {
+                    LOCAL_MESSAGES.push({ id: doc.id, ...doc.data() });
+                });
+                
+                if (currentRole === 'driver' && currentUser) {
+                    checkDriverMessages();
+                }
+                
+                if (currentRole === 'admin') {
+                    loadMessageStatus();
+                }
+            });
+        }
+        
+        function subscribeToArchive() {
+            if (unsubscribeArchive) unsubscribeArchive();
             
-            const queue = [...offlineQueue];
-            offlineQueue = [];
-            localStorage.setItem('shintorg_queue', JSON.stringify(offlineQueue));
+            unsubscribeArchive = db.collection('archive').orderBy('month', 'desc').onSnapshot((snapshot) => {
+                LOCAL_ARCHIVE = [];
+                snapshot.forEach(doc => {
+                    LOCAL_ARCHIVE.push({ id: doc.id, ...doc.data() });
+                });
+                
+                if (currentRole === 'admin') {
+                    loadArchiveList();
+                    updateArchiveSelectors();
+                } else if (currentRole === 'curator') {
+                    loadCuratorArchiveList();
+                    updateArchiveSelectors();
+                }
+            });
+        }
+        
+        // ============ СОХРАНЕНИЕ СЕССИИ ============
+        function saveSession() {
+            if (currentUser && currentRole) {
+                localStorage.setItem('shintorg_current_user', JSON.stringify(currentUser));
+                localStorage.setItem('shintorg_current_role', currentRole);
+            }
+        }
+        
+        async function loadSession() {
+            const savedUser = localStorage.getItem('shintorg_current_user');
+            const savedRole = localStorage.getItem('shintorg_current_role');
             
-            setTimeout(() => {
-                document.getElementById('sync-indicator').style.display = 'none';
-            }, 1000);
+            if (savedUser && savedRole) {
+                currentUser = JSON.parse(savedUser);
+                currentRole = savedRole;
+                
+                await loadFromFirebase();
+                
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('login-screen').classList.add('hidden');
+                
+                if (currentRole === 'driver') {
+                    document.getElementById('driver-cabinet').classList.remove('hidden');
+                    document.getElementById('driver-name-badge').innerHTML = `<i class="bi bi-person-circle"></i> ${currentUser.short || currentUser.name}`;
+                    loadDriverData();
+                    checkDriverMessages();
+                    
+                    if (currentUser.status === 'active' && currentUser.shiftType === 'city') {
+                        shiftActive = true;
+                        shiftStartTime = currentUser.shiftStartTime ? new Date(currentUser.shiftStartTime) : new Date();
+                        document.getElementById('shift-start-btn').classList.add('hidden');
+                        document.getElementById('shift-end-btn').classList.remove('hidden');
+                        startShiftTimer();
+                    }
+                } else if (currentRole === 'admin') {
+                    document.getElementById('admin-cabinet').classList.remove('hidden');
+                    subscribeToDrivers();
+                    subscribeToTrips();
+                    subscribeToMessages();
+                    subscribeToArchive();
+                    loadAdminData();
+                } else if (currentRole === 'curator') {
+                    document.getElementById('curator-cabinet').classList.remove('hidden');
+                    subscribeToDrivers();
+                    subscribeToTrips();
+                    subscribeToArchive();
+                    loadCuratorData();
+                }
+                
+                return true;
+            }
+            return false;
         }
         
         // ============ АВТОРИЗАЦИЯ ============
         window.switchLoginTab = function(tab) {
             document.querySelectorAll('#login-tabs .mobile-tab').forEach(el => el.classList.remove('active'));
-            document.querySelector(`#login-tabs .mobile-tab:nth-child(${tab === 'driver' ? 1 : tab === 'admin' ? 2 : 3})`).classList.add('active');
-            
-            document.getElementById('driver-login-panel').classList.toggle('hidden', tab !== 'driver');
-            document.getElementById('admin-login-panel').classList.toggle('hidden', tab !== 'admin');
-            document.getElementById('curator-login-panel').classList.toggle('hidden', tab !== 'curator');
+            if (tab === 'driver') {
+                document.querySelector('#login-tabs .mobile-tab:nth-child(1)').classList.add('active');
+                document.getElementById('driver-login-panel').classList.remove('hidden');
+                document.getElementById('admin-login-panel').classList.add('hidden');
+                document.getElementById('curator-login-panel').classList.add('hidden');
+            } else if (tab === 'admin') {
+                document.querySelector('#login-tabs .mobile-tab:nth-child(2)').classList.add('active');
+                document.getElementById('driver-login-panel').classList.add('hidden');
+                document.getElementById('admin-login-panel').classList.remove('hidden');
+                document.getElementById('curator-login-panel').classList.add('hidden');
+            } else if (tab === 'curator') {
+                document.querySelector('#login-tabs .mobile-tab:nth-child(3)').classList.add('active');
+                document.getElementById('driver-login-panel').classList.add('hidden');
+                document.getElementById('admin-login-panel').classList.add('hidden');
+                document.getElementById('curator-login-panel').classList.remove('hidden');
+            }
         };
         
-        window.loginDriver = function() {
+        window.loginDriver = async function() {
             const phone = document.getElementById('driver-login').value;
             const pass = document.getElementById('driver-password').value;
             
-            const driver = LOCAL_DRIVERS.find(d => d.phone === phone && d.password === pass);
-            
-            if (driver) {
-                currentUser = JSON.parse(JSON.stringify(driver));
-                currentRole = 'driver';
+            try {
+                const query = await db.collection('drivers').where('phone', '==', phone).where('password', '==', pass).get();
                 
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('driver-cabinet').classList.remove('hidden');
-                document.getElementById('driver-name-badge').innerHTML = `<i class="bi bi-person-circle"></i> ${driver.short || driver.name}`;
-                
-                if (driver.status === 'active' && driver.shiftType === 'city') {
-                    shiftActive = true;
-                    shiftStartTime = driver.shiftStartTime ? new Date(driver.shiftStartTime) : new Date();
+                if (!query.empty) {
+                    const driverData = query.docs[0].data();
+                    driverData.id = query.docs[0].id;
                     
-                    document.getElementById('shift-start-btn').classList.add('hidden');
-                    document.getElementById('shift-end-btn').classList.remove('hidden');
+                    currentUser = driverData;
+                    currentRole = 'driver';
+                    saveSession();
                     
-                    if (shiftTimer) clearInterval(shiftTimer);
-                    shiftTimer = setInterval(() => {
-                        if (!shiftActive) return;
-                        const diff = Math.floor((new Date() - shiftStartTime) / 1000);
-                        const h = Math.floor(diff / 3600).toString().padStart(2, '0');
-                        const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
-                        const s = (diff % 60).toString().padStart(2, '0');
-                        document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
-                    }, 1000);
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('driver-cabinet').classList.remove('hidden');
+                    document.getElementById('driver-name-badge').innerHTML = `<i class="bi bi-person-circle"></i> ${driverData.short || driverData.name}`;
                     
-                    startGeolocation();
+                    subscribeToTrips();
+                    subscribeToMessages();
+                    
+                    if (driverData.status === 'active' && driverData.shiftType === 'city') {
+                        shiftActive = true;
+                        shiftStartTime = driverData.shiftStartTime ? new Date(driverData.shiftStartTime) : new Date();
+                        document.getElementById('shift-start-btn').classList.add('hidden');
+                        document.getElementById('shift-end-btn').classList.remove('hidden');
+                        startShiftTimer();
+                        startGeolocation();
+                    }
+                    
+                    loadDriverData();
+                    checkDriverMessages();
+                    
+                    alert(`✅ Добро пожаловать, ${driverData.short || driverData.name}`);
+                } else {
+                    alert('❌ Неверный телефон или пароль');
                 }
-                
-                loadDriverData();
-                checkDriverMessages();
-                
-                alert(`✅ Добро пожаловать, ${driver.short || driver.name}`);
-            } else {
-                alert('❌ Неверный телефон или пароль');
+            } catch (error) {
+                console.error('Ошибка входа:', error);
+                alert('❌ Ошибка подключения к серверу');
             }
         };
         
@@ -1307,11 +1145,18 @@
             
             if (login === ADMIN_CRED.login && pass === ADMIN_CRED.password) {
                 currentRole = 'admin';
+                currentUser = { login: ADMIN_CRED.login, name: 'Администратор' };
+                saveSession();
                 
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('admin-cabinet').classList.remove('hidden');
                 
+                subscribeToDrivers();
+                subscribeToTrips();
+                subscribeToMessages();
+                subscribeToArchive();
                 loadAdminData();
+                
                 alert('✅ Добро пожаловать, Администратор');
             } else {
                 alert('❌ Неверный логин или пароль');
@@ -1324,11 +1169,17 @@
             
             if (login === CURATOR_CRED.login && pass === CURATOR_CRED.password) {
                 currentRole = 'curator';
+                currentUser = { login: CURATOR_CRED.login, name: 'Куратор' };
+                saveSession();
                 
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('curator-cabinet').classList.remove('hidden');
                 
+                subscribeToDrivers();
+                subscribeToTrips();
+                subscribeToArchive();
                 loadCuratorData();
+                
                 alert('✅ Добро пожаловать, Куратор');
             } else {
                 alert('❌ Неверный логин или пароль');
@@ -1336,7 +1187,7 @@
         };
         
         // ============ РЕГИСТРАЦИЯ ============
-        window.registerDriver = function() {
+        window.registerDriver = async function() {
             const name = document.getElementById('reg-name').value;
             const phone = document.getElementById('reg-phone').value;
             const pass = document.getElementById('reg-pass').value;
@@ -1346,42 +1197,67 @@
                 return;
             }
             
-            if (LOCAL_DRIVERS.find(d => d.phone === phone)) {
-                alert('❌ Этот телефон уже зарегистрирован');
-                return;
+            try {
+                const existing = await db.collection('drivers').where('phone', '==', phone).get();
+                
+                if (!existing.empty) {
+                    alert('❌ Этот телефон уже зарегистрирован');
+                    return;
+                }
+                
+                const nameParts = name.split(' ');
+                let short = nameParts[0];
+                if (nameParts.length > 1) short += ' ' + nameParts[1][0] + '.';
+                if (nameParts.length > 2) short += nameParts[2][0] + '.';
+                
+                const newDriver = {
+                    name: name,
+                    short: short,
+                    phone: phone,
+                    password: pass,
+                    status: 'offline',
+                    shiftType: null,
+                    shiftStartTime: null,
+                    location: '',
+                    lat: null,
+                    lng: null,
+                    lastSeen: null,
+                    registeredAt: new Date().toISOString().split('T')[0]
+                };
+                
+                await db.collection('drivers').add(newDriver);
+                
+                alert('✅ Регистрация успешна! Теперь войдите.');
+                backToLogin();
+            } catch (error) {
+                console.error('Ошибка регистрации:', error);
+                alert('❌ Ошибка регистрации');
             }
-            
-            const nameParts = name.split(' ');
-            let short = nameParts[0];
-            if (nameParts.length > 1) short += ' ' + nameParts[1][0] + '.';
-            if (nameParts.length > 2) short += nameParts[2][0] + '.';
-            
-            const newDriver = {
-                id: Date.now().toString(),
-                name: name,
-                short: short,
-                phone: phone,
-                password: pass,
-                status: 'offline',
-                shiftType: null,
-                shiftStartTime: null,
-                location: '',
-                lat: null,
-                lng: null,
-                lastSeen: null,
-                registeredAt: new Date().toISOString().split('T')[0]
-            };
-            
-            LOCAL_DRIVERS.push(newDriver);
-            saveToStorage();
-            
-            alert('✅ Регистрация успешна! Теперь войдите.');
-            backToLogin();
         };
         
         // ============ ГЕОЛОКАЦИЯ ============
+        async function updateDriverLocation(lat, lng) {
+            if (!currentUser || !currentUser.id) return;
+            
+            try {
+                await db.collection('drivers').doc(currentUser.id).update({
+                    lat: lat,
+                    lng: lng,
+                    location: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+                    lastSeen: new Date().toISOString()
+                });
+                
+                currentUser.lat = lat;
+                currentUser.lng = lng;
+                currentUser.location = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                saveSession();
+            } catch (error) {
+                console.error('Ошибка обновления геолокации:', error);
+            }
+        }
+        
         function startGeolocation() {
-            if (!currentUser || !navigator.geolocation) return;
+            if (!currentUser || !currentUser.id || !navigator.geolocation) return;
             
             if (geoWatchId) navigator.geolocation.clearWatch(geoWatchId);
             
@@ -1390,27 +1266,13 @@
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     
-                    const driver = LOCAL_DRIVERS.find(d => d.phone === currentUser.phone);
-                    if (driver) {
-                        driver.lat = lat;
-                        driver.lng = lng;
-                        driver.location = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                        driver.lastSeen = new Date();
-                        saveToStorage();
-                    }
+                    updateDriverLocation(lat, lng);
                     
                     document.getElementById('geo-status-block').innerHTML = `
                         <span class="geo-active">
                             <i class="bi bi-satellite"></i> 🟢 ${lat.toFixed(4)}, ${lng.toFixed(4)}
                         </span>
                     `;
-                    
-                    if (currentRole === 'admin') {
-                        loadAdminDrivers();
-                    }
-                    if (currentRole === 'curator') {
-                        loadCuratorDrivers();
-                    }
                 },
                 (error) => {
                     document.getElementById('geo-status-block').innerHTML = `
@@ -1426,28 +1288,34 @@
         }
         
         // ============ КАРТА ============
-        window.showDriverMap = function(driverPhone, driverName) {
-            const driver = LOCAL_DRIVERS.find(d => d.phone === driverPhone);
-            if (!driver || !driver.lat || !driver.lng) {
-                alert('Нет данных геолокации');
-                return;
+        window.showDriverMap = async function(driverId, driverName) {
+            try {
+                const doc = await db.collection('drivers').doc(driverId).get();
+                const driver = doc.data();
+                
+                if (!driver || !driver.lat || !driver.lng) {
+                    alert('Нет данных геолокации');
+                    return;
+                }
+                
+                document.getElementById('map-modal').classList.remove('hidden');
+                document.getElementById('map-driver-name').innerHTML = `<i class="bi bi-geo-alt-fill"></i> ${driverName}`;
+                
+                setTimeout(() => {
+                    if (currentMap) currentMap.remove();
+                    
+                    currentMap = L.map('driver-map').setView([driver.lat, driver.lng], 15);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(currentMap);
+                    
+                    if (mapMarker) mapMarker.remove();
+                    mapMarker = L.marker([driver.lat, driver.lng]).addTo(currentMap)
+                        .bindPopup(`<b>${driver.short || driver.name}</b>`)
+                        .openPopup();
+                }, 100);
+            } catch (error) {
+                console.error('Ошибка карты:', error);
+                alert('❌ Ошибка загрузки карты');
             }
-            
-            document.getElementById('map-modal').classList.remove('hidden');
-            document.getElementById('map-driver-name').innerHTML = `<i class="bi bi-geo-alt-fill"></i> ${driverName}`;
-            
-            setTimeout(() => {
-                if (currentMap) currentMap.remove();
-                
-                currentMap = L.map('driver-map').setView([driver.lat, driver.lng], 15);
-                
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(currentMap);
-                
-                if (mapMarker) mapMarker.remove();
-                mapMarker = L.marker([driver.lat, driver.lng]).addTo(currentMap)
-                    .bindPopup(`<b>${driver.short || driver.name}</b>`)
-                    .openPopup();
-            }, 100);
         };
         
         window.closeMap = function() {
@@ -1459,39 +1327,39 @@
         };
         
         // ============ СМЕНА ============
-        window.startShift = function() {
-            if (!currentUser) return;
+        window.startShift = async function() {
+            if (!currentUser || !currentUser.id) return;
             
             shiftActive = true;
             shiftStartTime = new Date();
             
-            const driver = LOCAL_DRIVERS.find(d => d.phone === currentUser.phone);
-            if (driver) {
-                driver.status = 'active';
-                driver.shiftType = 'city';
-                driver.shiftStartTime = shiftStartTime.toISOString();
-                saveToStorage();
+            try {
+                await db.collection('drivers').doc(currentUser.id).update({
+                    status: 'active',
+                    shiftType: 'city',
+                    shiftStartTime: shiftStartTime.toISOString()
+                });
+                
+                currentUser.status = 'active';
+                currentUser.shiftType = 'city';
+                currentUser.shiftStartTime = shiftStartTime.toISOString();
+                saveSession();
+                
+                document.getElementById('shift-start-btn').classList.add('hidden');
+                document.getElementById('shift-end-btn').classList.remove('hidden');
+                
+                startShiftTimer();
+                startGeolocation();
+                
+                alert('🚕 Смена начата!');
+            } catch (error) {
+                console.error('Ошибка начала смены:', error);
+                alert('❌ Ошибка начала смены');
             }
-            
-            document.getElementById('shift-start-btn').classList.add('hidden');
-            document.getElementById('shift-end-btn').classList.remove('hidden');
-            
-            if (shiftTimer) clearInterval(shiftTimer);
-            shiftTimer = setInterval(() => {
-                if (!shiftActive) return;
-                const diff = Math.floor((new Date() - shiftStartTime) / 1000);
-                const h = Math.floor(diff / 3600).toString().padStart(2, '0');
-                const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
-                const s = (diff % 60).toString().padStart(2, '0');
-                document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
-            }, 1000);
-            
-            startGeolocation();
-            alert('🚕 Смена начата!');
         };
         
-        window.endShift = function() {
-            if (!shiftActive || !currentUser) return;
+        window.endShift = async function() {
+            if (!shiftActive || !currentUser || !currentUser.id) return;
             
             const seconds = Math.floor((new Date() - shiftStartTime) / 1000);
             
@@ -1507,50 +1375,54 @@
             const earn = Math.round(hours * currentRate);
             const comment = document.getElementById('shift-comment').value || '';
             
-            const newTrip = {
-                id: Date.now().toString(),
-                driverId: currentUser.phone,
-                driverName: currentUser.short || currentUser.name,
-                date: new Date().toISOString().split('T')[0],
-                type: 'город',
-                hours: hours,
-                earn: earn,
-                comment: comment,
-                location: currentUser.location || '',
-                timestamp: new Date().toISOString()
-            };
-            
-            LOCAL_TRIPS.push(newTrip);
-            
-            const driver = LOCAL_DRIVERS.find(d => d.phone === currentUser.phone);
-            if (driver) {
-                driver.status = 'offline';
-                driver.shiftType = null;
-                driver.shiftStartTime = null;
-                saveToStorage();
+            try {
+                await db.collection('trips').add({
+                    driverId: currentUser.phone,
+                    driverName: currentUser.short || currentUser.name,
+                    date: new Date().toISOString().split('T')[0],
+                    type: 'город',
+                    hours: hours,
+                    earn: earn,
+                    comment: comment,
+                    location: currentUser.location || '',
+                    timestamp: new Date().toISOString()
+                });
+                
+                await db.collection('drivers').doc(currentUser.id).update({
+                    status: 'offline',
+                    shiftType: null,
+                    shiftStartTime: null
+                });
+                
+                currentUser.status = 'offline';
+                currentUser.shiftType = null;
+                currentUser.shiftStartTime = null;
+                saveSession();
+                
+                if (geoWatchId) {
+                    navigator.geolocation.clearWatch(geoWatchId);
+                    geoWatchId = null;
+                }
+                
+                shiftActive = false;
+                clearInterval(shiftTimer);
+                
+                document.getElementById('timer-display').innerText = '00:00:00';
+                document.getElementById('shift-start-btn').classList.remove('hidden');
+                document.getElementById('shift-end-btn').classList.add('hidden');
+                document.getElementById('shift-comment').value = '';
+                document.getElementById('geo-status-block').innerHTML = '<span class="geo-inactive"><i class="bi bi-satellite"></i> Геолокация не активна</span>';
+                
+                alert(`✅ Смена завершена! Заработано: ${earn} ₽`);
+            } catch (error) {
+                console.error('Ошибка завершения смены:', error);
+                alert('❌ Ошибка завершения смены');
             }
-            
-            if (geoWatchId) {
-                navigator.geolocation.clearWatch(geoWatchId);
-                geoWatchId = null;
-            }
-            
-            shiftActive = false;
-            clearInterval(shiftTimer);
-            document.getElementById('timer-display').innerText = '00:00:00';
-            document.getElementById('shift-start-btn').classList.remove('hidden');
-            document.getElementById('shift-end-btn').classList.add('hidden');
-            document.getElementById('shift-comment').value = '';
-            document.getElementById('geo-status-block').innerHTML = '<span class="geo-inactive"><i class="bi bi-satellite"></i> Геолокация не активна</span>';
-            
-            saveToStorage();
-            alert(`✅ Смена завершена! Заработано: ${earn} ₽`);
-            loadDriverData();
         };
         
         // ============ МЕЖГОРОД ============
-        window.addIntercityTrip = function() {
-            if (!currentUser) return;
+        window.addIntercityTrip = async function() {
+            if (!currentUser || !currentUser.id) return;
             
             const direction = document.getElementById('inter-direction').value || 'Межгород';
             const sum = parseFloat(document.getElementById('inter-sum').value);
@@ -1562,27 +1434,27 @@
             
             const comment = document.getElementById('inter-comment').value || '';
             
-            const newTrip = {
-                id: Date.now().toString(),
-                driverId: currentUser.phone,
-                driverName: currentUser.short || currentUser.name,
-                date: new Date().toISOString().split('T')[0],
-                type: 'межгород',
-                direction: direction,
-                earn: sum,
-                comment: comment,
-                timestamp: new Date().toISOString()
-            };
-            
-            LOCAL_TRIPS.push(newTrip);
-            saveToStorage();
-            
-            document.getElementById('inter-direction').value = '';
-            document.getElementById('inter-sum').value = '';
-            document.getElementById('inter-comment').value = '';
-            
-            alert(`🚛 Рейс зафиксирован! ${sum} ₽`);
-            loadDriverData();
+            try {
+                await db.collection('trips').add({
+                    driverId: currentUser.phone,
+                    driverName: currentUser.short || currentUser.name,
+                    date: new Date().toISOString().split('T')[0],
+                    type: 'межгород',
+                    direction: direction,
+                    earn: sum,
+                    comment: comment,
+                    timestamp: new Date().toISOString()
+                });
+                
+                document.getElementById('inter-direction').value = '';
+                document.getElementById('inter-sum').value = '';
+                document.getElementById('inter-comment').value = '';
+                
+                alert(`🚛 Рейс зафиксирован! ${sum} ₽`);
+            } catch (error) {
+                console.error('Ошибка добавления рейса:', error);
+                alert('❌ Ошибка добавления рейса');
+            }
         };
         
         // ============ ЗАГРУЗКА ДАННЫХ ВОДИТЕЛЯ ============
@@ -1611,8 +1483,8 @@
                 html += `<tr>
                     <td>${trip.date}</td>
                     <td><span class="badge ${trip.type === 'город' ? 'bg-primary' : 'bg-warning'}">${trip.type}</span></td>
-                    <td class="fw-bold">${trip.earn} ₽</td>
-                    <td><small class="text-secondary">${trip.comment || ''}</small></td>
+                    <td>${trip.earn} ₽</td>
+                    <td><small>${trip.comment || ''}</small></td>
                 </tr>`;
             });
             document.getElementById('driver-trips-table').innerHTML = html || '<tr><td colspan="4" class="text-center">Нет поездок</td></tr>';
@@ -1629,10 +1501,10 @@
                 messages.forEach(msg => {
                     html += `<div class="message-bubble">
                         <div class="d-flex justify-content-between">
-                            <strong><i class="bi bi-envelope-fill"></i> Сообщение от админа</strong>
+                            <strong>📨 Сообщение от админа</strong>
                             <small>${msg.time || ''}</small>
                         </div>
-                        <p class="mb-2 mt-2">${msg.text}</p>
+                        <p class="mb-2">${msg.text}</p>
                         <button class="btn btn-sm btn-outline-primary rounded-pill px-4" onclick="markMessageRead('${msg.id}')">
                             <i class="bi bi-check2-all"></i> Прочитано
                         </button>
@@ -1644,17 +1516,41 @@
             }
         }
         
-        window.markMessageRead = function(messageId) {
-            const msg = LOCAL_MESSAGES.find(m => m.id === messageId);
-            if (msg) {
-                msg.read = true;
-                msg.readAt = new Date().toISOString();
-                saveToStorage();
-                checkDriverMessages();
+        window.markMessageRead = async function(messageId) {
+            try {
+                await db.collection('messages').doc(messageId).update({
+                    read: true,
+                    readAt: new Date().toISOString()
+                });
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        };
+        
+        window.sendMessageToDriver = async function() {
+            const driverPhone = document.getElementById('message-driver-select').value;
+            const text = document.getElementById('message-text').value;
+            
+            if (!driverPhone || !text) {
+                alert('Выберите водителя и введите текст');
+                return;
             }
             
-            if (currentRole === 'admin') {
-                loadMessageStatus();
+            try {
+                await db.collection('messages').add({
+                    driverPhone: driverPhone,
+                    text: text,
+                    time: new Date().toLocaleTimeString().slice(0,5),
+                    read: false,
+                    readAt: null,
+                    timestamp: new Date().toISOString()
+                });
+                
+                document.getElementById('message-text').value = '';
+                alert('✅ Сообщение отправлено');
+            } catch (error) {
+                console.error('Ошибка отправки:', error);
+                alert('❌ Ошибка отправки');
             }
         };
         
@@ -1675,35 +1571,9 @@
             document.getElementById('message-status-container').innerHTML = html || '<p class="text-center">Нет сообщений</p>';
         }
         
-        window.sendMessageToDriver = function() {
-            const driverPhone = document.getElementById('message-driver-select').value;
-            const text = document.getElementById('message-text').value;
-            
-            if (!driverPhone || !text) {
-                alert('Выберите водителя и введите текст');
-                return;
-            }
-            
-            const newMsg = {
-                id: Date.now().toString(),
-                driverPhone: driverPhone,
-                text: text,
-                time: new Date().toLocaleTimeString().slice(0,5),
-                read: false,
-                readAt: null,
-                timestamp: new Date().toISOString()
-            };
-            
-            LOCAL_MESSAGES.push(newMsg);
-            saveToStorage();
-            
-            document.getElementById('message-text').value = '';
-            alert('✅ Сообщение отправлено');
-            loadMessageStatus();
-        };
-        
         // ============ АДМИН ============
         function loadAdminData() {
+            document.getElementById('admin-rate-input').value = currentRate;
             loadAdminDrivers();
             loadAllDrivers();
             loadAdminTrips();
@@ -1711,39 +1581,15 @@
             loadArchiveList();
             loadMessageDriversList();
             loadMessageStatus();
-            document.getElementById('admin-rate-input').value = currentRate;
             updateMonthSelectors();
             updateArchiveSelectors();
         }
         
-        // АКТИВНЫЕ ВОДИТЕЛИ
-        function getActiveDriversThisMonth() {
-            const month = new Date().toISOString().slice(0, 7);
-            const activeDrivers = new Set();
-            
-            LOCAL_TRIPS.forEach(trip => {
-                if (trip.date && trip.date.startsWith(month)) {
-                    activeDrivers.add(trip.driverId);
-                }
-            });
-            
-            LOCAL_DRIVERS.forEach(driver => {
-                if (driver.status === 'active') {
-                    activeDrivers.add(driver.phone);
-                }
-            });
-            
-            return Array.from(activeDrivers);
-        }
-        
         function loadAdminDrivers() {
-            const activeDriverPhones = getActiveDriversThisMonth();
             let html = '';
             let active = 0, city = 0, inter = 0;
             
             LOCAL_DRIVERS.forEach(driver => {
-                if (!activeDriverPhones.includes(driver.phone)) return;
-                
                 if (driver.status === 'active') {
                     active++;
                     if (driver.shiftType === 'city') city++;
@@ -1763,7 +1609,7 @@
                     }
                 }
                 
-                const hasGeo = driver.lat && driver.lng;
+                const hasGeo = driver.lat && driver.lng && driver.status === 'active';
                 
                 html += `<tr>
                     <td>
@@ -1774,12 +1620,13 @@
                         <span class="${statusClass} px-3 py-2">${statusText}</span>
                     </td>
                     <td>
-                        ${hasGeo ? `<span class="text-success"><i class="bi bi-geo-alt-fill"></i> Есть</span>` : '—'}
+                        ${hasGeo ? `<span class="text-success"><i class="bi bi-geo-alt-fill"></i> Движется</span>` : '—'}
                     </td>
                     <td>
-                        ${hasGeo ? `<button class="btn btn-sm btn-outline-info" onclick="showDriverMap('${driver.phone}', '${driver.short || driver.name}')">
-                            <i class="bi bi-map"></i>
-                        </button>` : '—'}
+                        ${hasGeo ? 
+                            `<button class="btn btn-sm btn-outline-info" onclick="showDriverMap('${driver.id}', '${driver.short || driver.name}')">
+                                <i class="bi bi-map"></i>
+                            </button>` : '—'}
                     </td>
                     <td>
                         <div class="d-flex align-items-center gap-1">
@@ -1787,7 +1634,7 @@
                             <button class="btn btn-sm btn-link" onclick="togglePasswordVisibility('${driver.phone}')">
                                 <i class="bi bi-eye"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-primary" onclick="editDriverPassword('${driver.phone}')">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editDriverPassword('${driver.id}')">
                                 <i class="bi bi-pencil"></i>
                             </button>
                         </div>
@@ -1801,13 +1648,10 @@
             document.getElementById('admin-inter-count').innerHTML = inter;
         }
         
-        // ВСЕ ВОДИТЕЛИ
         function loadAllDrivers() {
             let html = '';
             
             LOCAL_DRIVERS.forEach(driver => {
-                let statusText = driver.status === 'active' ? '🟢 Активен' : '⚪ Офлайн';
-                
                 html += `<tr>
                     <td>
                         <div class="fw-bold">${driver.short || driver.name}</div>
@@ -1824,14 +1668,14 @@
                     </td>
                     <td>
                         <span class="${driver.status === 'active' ? 'status-working' : 'status-offline'} px-3 py-2">
-                            ${statusText}
+                            ${driver.status === 'active' ? 'Активен' : 'Офлайн'}
                         </span>
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="editDriverPassword('${driver.phone}')">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editDriverPassword('${driver.id}')">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteDriver('${driver.phone}')">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteDriver('${driver.id}')">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
@@ -1841,18 +1685,26 @@
             document.getElementById('admin-all-drivers-table').innerHTML = html || '<tr><td colspan="5" class="text-center">Нет водителей</td></tr>';
         }
         
-        window.deleteDriver = function(phone) {
-            if (confirm('⚠️ Точно удалить водителя?\nВсе его поездки и данные будут удалены.')) {
-                LOCAL_DRIVERS = LOCAL_DRIVERS.filter(d => d.phone !== phone);
-                LOCAL_TRIPS = LOCAL_TRIPS.filter(t => t.driverId !== phone);
-                LOCAL_MESSAGES = LOCAL_MESSAGES.filter(m => m.driverPhone !== phone);
-                saveToStorage();
-                
-                alert('✅ Водитель удален из системы');
-                loadAdminDrivers();
-                loadAllDrivers();
-                loadAdminTrips();
-                loadMessageDriversList();
+        window.deleteDriver = async function(driverId) {
+            if (confirm('⚠️ Удалить водителя? Все его поездки и сообщения будут удалены.')) {
+                try {
+                    await db.collection('drivers').doc(driverId).delete();
+                    
+                    const trips = await db.collection('trips').where('driverId', '==', driverId).get();
+                    trips.forEach(async (doc) => {
+                        await doc.ref.delete();
+                    });
+                    
+                    const messages = await db.collection('messages').where('driverPhone', '==', driverId).get();
+                    messages.forEach(async (doc) => {
+                        await doc.ref.delete();
+                    });
+                    
+                    alert('✅ Водитель удален');
+                } catch (error) {
+                    console.error('Ошибка удаления:', error);
+                    alert('❌ Ошибка удаления');
+                }
             }
         };
         
@@ -1876,16 +1728,17 @@
             }
         };
         
-        window.editDriverPassword = function(phone) {
-            const newPass = prompt('Введите новый пароль для водителя:');
+        window.editDriverPassword = async function(driverId) {
+            const newPass = prompt('Введите новый пароль:');
             if (newPass) {
-                const driver = LOCAL_DRIVERS.find(d => d.phone === phone);
-                if (driver) {
-                    driver.password = newPass;
-                    saveToStorage();
+                try {
+                    await db.collection('drivers').doc(driverId).update({
+                        password: newPass
+                    });
                     alert('✅ Пароль обновлен');
-                    loadAdminDrivers();
-                    loadAllDrivers();
+                } catch (error) {
+                    console.error('Ошибка изменения пароля:', error);
+                    alert('❌ Ошибка изменения пароля');
                 }
             }
         };
@@ -1923,36 +1776,34 @@
             document.getElementById('admin-trips-table-mobile').innerHTML = html || '<tr><td colspan="7" class="text-center">Нет поездок</td></tr>';
         }
         
-        window.editTrip = function(tripId) {
+        window.editTrip = async function(tripId) {
             const trip = LOCAL_TRIPS.find(t => t.id === tripId);
             if (!trip) return;
             
             const newEarn = parseFloat(document.getElementById(`earn-${tripId}`).value);
-            if (!isNaN(newEarn) && newEarn > 0) {
-                trip.earn = newEarn;
-            }
+            const newHours = parseFloat(document.getElementById(`hours-${tripId}`).value);
             
-            if (trip.type === 'город') {
-                const newHours = parseFloat(document.getElementById(`hours-${tripId}`).value);
-                if (!isNaN(newHours) && newHours > 0) {
-                    trip.hours = newHours;
-                    trip.earn = Math.round(newHours * currentRate);
-                }
+            try {
+                await db.collection('trips').doc(tripId).update({
+                    earn: newEarn,
+                    hours: newHours
+                });
+                alert('✅ Поездка обновлена');
+            } catch (error) {
+                console.error('Ошибка обновления:', error);
+                alert('❌ Ошибка обновления');
             }
-            
-            saveToStorage();
-            alert('✅ Поездка обновлена');
-            loadAdminTrips();
-            loadAdminReports();
         };
         
-        window.deleteTrip = function(tripId) {
+        window.deleteTrip = async function(tripId) {
             if (confirm('⚠️ Удалить поездку?')) {
-                LOCAL_TRIPS = LOCAL_TRIPS.filter(t => t.id !== tripId);
-                saveToStorage();
-                alert('✅ Поездка удалена');
-                loadAdminTrips();
-                loadAdminReports();
+                try {
+                    await db.collection('trips').doc(tripId).delete();
+                    alert('✅ Поездка удалена');
+                } catch (error) {
+                    console.error('Ошибка удаления:', error);
+                    alert('❌ Ошибка удаления');
+                }
             }
         };
         
@@ -1961,9 +1812,7 @@
             const months = new Set();
             
             LOCAL_TRIPS.forEach(trip => {
-                if (trip.date) {
-                    months.add(trip.date.slice(0, 7));
-                }
+                if (trip.date) months.add(trip.date.slice(0, 7));
             });
             
             LOCAL_ARCHIVE.forEach(arch => {
@@ -1991,85 +1840,51 @@
             if (curatorSelect) curatorSelect.innerHTML = curatorOptions;
         }
         
-        // ЗАГРУЗКА ОТЧЕТОВ АДМИНА
         window.loadAdminMonthReport = function() {
             const month = document.getElementById('report-month-select').value;
-            if (!month) {
-                // Если месяц не выбран, показываем пустые состояния
-                document.getElementById('admin-daily-report-content').innerHTML = '<p class="text-center text-secondary py-4">Выберите месяц</p>';
-                document.getElementById('admin-summary-report-content').innerHTML = '<p class="text-center text-secondary py-4">Выберите месяц</p>';
-                document.getElementById('admin-total-hours').innerHTML = '0 ч';
-                document.getElementById('admin-total-inter').innerHTML = '0';
-                document.getElementById('admin-total-earn').innerHTML = '0 ₽';
-                return;
-            }
+            if (!month) return;
             
             let monthTrips = LOCAL_TRIPS.filter(t => t.date && t.date.startsWith(month));
             
             if (monthTrips.length === 0) {
-                // Если нет поездок за этот месяц, показываем пустой отчет
-                document.getElementById('admin-daily-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет поездок за этот месяц</p>';
-                document.getElementById('admin-summary-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет данных</p>';
-                document.getElementById('admin-total-hours').innerHTML = '0 ч';
-                document.getElementById('admin-total-inter').innerHTML = '0';
-                document.getElementById('admin-total-earn').innerHTML = '0 ₽';
-                return;
+                const archive = LOCAL_ARCHIVE.find(a => a.month === month);
+                if (archive) monthTrips = archive.trips;
             }
             
-            currentReportMonth = month;
-            window.currentMonthTrips = monthTrips;
-            
-            loadAdminDailyReport(monthTrips);
-            loadAdminSummaryReport(monthTrips);
-        };
-        
-        function loadAdminDailyReport(trips) {
-            let html = '';
-            
-            if (trips.length === 0) {
-                html = '<p class="text-center text-secondary py-4">Нет поездок за этот месяц</p>';
-            } else {
-                trips.slice().reverse().forEach(trip => {
-                    const route = trip.type === 'город' ? `${trip.hours} ч` : (trip.direction || 'Межгород');
-                    html += `<div class="trip-row">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="fw-bold">${trip.driverName}</div>
-                                <div class="text-secondary small">${trip.date}</div>
-                            </div>
-                            <div class="text-end">
-                                <span class="badge ${trip.type === 'город' ? 'bg-primary' : 'bg-warning'} mb-1">${trip.type}</span>
-                                <div class="fw-bold text-success">${trip.earn} ₽</div>
-                            </div>
+            // Детальный отчет
+            let dailyHtml = '';
+            monthTrips.slice().reverse().forEach(trip => {
+                const route = trip.type === 'город' ? `${trip.hours} ч` : (trip.direction || 'Межгород');
+                dailyHtml += `<div class="trip-row">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="fw-bold">${trip.driverName}</div>
+                            <div class="text-secondary small">${trip.date}</div>
                         </div>
-                        <div class="d-flex justify-content-between mt-2">
-                            <div>
-                                <small class="text-secondary">Маршрут: ${route}</small>
-                            </div>
-                            ${trip.comment ? `<div><small class="text-secondary">💬 ${trip.comment}</small></div>` : ''}
+                        <div class="text-end">
+                            <span class="badge ${trip.type === 'город' ? 'bg-primary' : 'bg-warning'}">${trip.type}</span>
+                            <div class="fw-bold text-success">${trip.earn} ₽</div>
                         </div>
-                    </div>`;
-                });
-            }
+                    </div>
+                    <div class="mt-1">
+                        <small class="text-secondary">Маршрут: ${route}</small>
+                        ${trip.comment ? `<div><small class="text-secondary">💬 ${trip.comment}</small></div>` : ''}
+                    </div>
+                </div>`;
+            });
             
-            document.getElementById('admin-daily-report-content').innerHTML = html;
-        }
-        
-        function loadAdminSummaryReport(trips) {
+            document.getElementById('admin-daily-report-content').innerHTML = dailyHtml || '<p class="text-center py-4">Нет поездок</p>';
+            
+            // Сводный отчет
             const summary = {};
             let totalCityHours = 0;
             let totalInterTrips = 0;
             let totalEarn = 0;
             
-            trips.forEach(trip => {
+            monthTrips.forEach(trip => {
                 if (!summary[trip.driverName]) {
-                    summary[trip.driverName] = {
-                        cityHours: 0,
-                        interTrips: 0,
-                        earn: 0
-                    };
+                    summary[trip.driverName] = { cityHours: 0, interTrips: 0, earn: 0 };
                 }
-                
                 if (trip.type === 'город') {
                     summary[trip.driverName].cityHours += trip.hours || 0;
                     totalCityHours += trip.hours || 0;
@@ -2077,40 +1892,30 @@
                     summary[trip.driverName].interTrips += 1;
                     totalInterTrips += 1;
                 }
-                
                 summary[trip.driverName].earn += trip.earn || 0;
                 totalEarn += trip.earn || 0;
             });
             
-            let html = '';
+            let summaryHtml = '';
+            Object.keys(summary).forEach(name => {
+                const s = summary[name];
+                summaryHtml += `<div class="driver-stat-item">
+                    <div class="d-flex justify-content-between">
+                        <strong>${name}</strong>
+                        <span class="fw-bold text-success">${s.earn} ₽</span>
+                    </div>
+                    <div class="d-flex gap-3 mt-1 small">
+                        <span>🚕 ${s.cityHours.toFixed(1)} ч</span>
+                        <span>🛣️ ${s.interTrips} поездок</span>
+                    </div>
+                </div>`;
+            });
             
-            if (Object.keys(summary).length === 0) {
-                html = '<p class="text-center text-secondary py-4">Нет данных</p>';
-            } else {
-                Object.keys(summary).sort().forEach(name => {
-                    const s = summary[name];
-                    html += `<div class="driver-stat-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="fw-bold">${name}</div>
-                                <div class="d-flex gap-3 mt-1 small">
-                                    <span class="text-primary">🚕 ${s.cityHours.toFixed(1)} ч</span>
-                                    <span class="text-warning">🛣️ ${s.interTrips} поездок</span>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <div class="fw-bold text-success fs-5">${s.earn} ₽</div>
-                            </div>
-                        </div>
-                    </div>`;
-                });
-            }
-            
-            document.getElementById('admin-summary-report-content').innerHTML = html;
+            document.getElementById('admin-summary-report-content').innerHTML = summaryHtml || '<p class="text-center py-4">Нет данных</p>';
             document.getElementById('admin-total-hours').innerHTML = `${totalCityHours.toFixed(1)} ч`;
             document.getElementById('admin-total-inter').innerHTML = totalInterTrips;
             document.getElementById('admin-total-earn').innerHTML = `${totalEarn} ₽`;
-        }
+        };
         
         window.switchAdminReportTab = function(tab) {
             const dailyContainer = document.getElementById('admin-daily-report-container');
@@ -2129,6 +1934,12 @@
                 tabs[1].classList.add('active');
             }
         };
+        
+        function loadAdminReports() {
+            const month = new Date().toISOString().slice(0, 7);
+            document.getElementById('report-month-select').value = month;
+            loadAdminMonthReport();
+        }
         
         // ============ АРХИВ ============
         function updateArchiveSelectors() {
@@ -2157,21 +1968,20 @@
         }
         
         function loadArchiveList() {
-            let adminHtml = '';
-            let curatorHtml = '';
+            let html = '';
             
             LOCAL_ARCHIVE.slice().reverse().forEach((arch, index) => {
-                const card = `<div class="archive-card">
+                html += `<div class="archive-card">
                     <div class="archive-header" onclick="toggleArchiveContent(this)">
                         <div class="d-flex justify-content-between w-100">
                             <div>
                                 <h5 class="fw-bold mb-1">${arch.month}</h5>
                                 <div class="text-secondary small">
-                                    <i class="bi bi-truck"></i> ${arch.trips.length} поездок
+                                    ${arch.trips?.length || 0} поездок
                                 </div>
                             </div>
                             <div class="text-end">
-                                <span class="fs-5 fw-bold text-success">${arch.total} ₽</span>
+                                <span class="fs-5 fw-bold text-success">${arch.total || 0} ₽</span>
                                 <div><i class="bi bi-chevron-down"></i></div>
                             </div>
                         </div>
@@ -2188,606 +1998,64 @@
                                 <span>🛣️ ${arch.summary[name]?.interTrips || 0} поездок</span>
                             </div>
                         `).join('')}
-                        
-                        <hr class="my-3">
-                        <h6 class="fw-bold mb-2">Поездки:</h6>
-                        ${arch.trips.slice().reverse().map(t => `
-                            <div class="border-bottom pb-2 mb-2">
-                                <div class="d-flex justify-content-between">
-                                    <span class="fw-bold">${t.driverName}</span>
-                                    <span class="text-success">${t.earn} ₽</span>
-                                </div>
-                                <div class="d-flex justify-content-between text-secondary small">
-                                    <span>${t.date} • ${t.type}</span>
-                                    <span>${t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород')}</span>
-                                </div>
-                                ${t.comment ? `<div class="text-secondary small mt-1">💬 ${t.comment}</div>` : ''}
-                            </div>
-                        `).join('')}
-                        
-                        <div class="d-flex gap-2 mt-3">
-                            <button class="btn btn-sm btn-success flex-fill" onclick="exportArchive(${index})">
-                                <i class="bi bi-file-earmark-excel"></i> Excel
-                            </button>
-                            <button class="btn btn-sm btn-primary flex-fill" onclick="printArchive(${index})">
-                                <i class="bi bi-printer"></i> Печать
-                            </button>
-                            <button class="btn btn-sm btn-danger flex-fill" onclick="deleteArchive(${index})">
-                                <i class="bi bi-trash"></i> Удалить
-                            </button>
-                        </div>
                     </div>
                 </div>`;
-                adminHtml += card;
-                curatorHtml += card;
             });
             
-            document.getElementById('admin-archive-content').innerHTML = adminHtml || '<p class="text-center py-5 text-secondary"><i class="bi bi-archive fs-1"></i><br>Нет архивов</p>';
-            if (document.getElementById('curator-archive-content')) {
-                document.getElementById('curator-archive-content').innerHTML = curatorHtml;
-            }
+            document.getElementById('admin-archive-content').innerHTML = html || '<p class="text-center py-5 text-secondary">Нет архивов</p>';
         }
         
-        window.loadAdminArchiveMonth = function() {
-            const month = document.getElementById('admin-archive-month-select').value;
-            if (!month) return;
+        function loadCuratorArchiveList() {
+            let html = '';
             
-            const archive = LOCAL_ARCHIVE.find(a => a.month === month);
-            if (archive) {
-                // Показываем только выбранный месяц
-                let html = '';
-                const index = LOCAL_ARCHIVE.findIndex(a => a.month === month);
-                if (index !== -1) {
-                    const arch = LOCAL_ARCHIVE[index];
-                    html = `<div class="archive-card">
-                        <div class="archive-header" onclick="toggleArchiveContent(this)">
-                            <div class="d-flex justify-content-between w-100">
-                                <div>
-                                    <h5 class="fw-bold mb-1">${arch.month}</h5>
-                                    <div class="text-secondary small">
-                                        <i class="bi bi-truck"></i> ${arch.trips.length} поездок
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <span class="fs-5 fw-bold text-success">${arch.total} ₽</span>
-                                    <div><i class="bi bi-chevron-down"></i></div>
+            LOCAL_ARCHIVE.slice().reverse().forEach((arch) => {
+                html += `<div class="archive-card">
+                    <div class="archive-header" onclick="toggleArchiveContent(this)">
+                        <div class="d-flex justify-content-between w-100">
+                            <div>
+                                <h5 class="fw-bold mb-1">${arch.month}</h5>
+                                <div class="text-secondary small">
+                                    ${arch.trips?.length || 0} поездок
                                 </div>
                             </div>
-                        </div>
-                        <div class="archive-content">
-                            <h6 class="fw-bold mb-3">Итоги по водителям:</h6>
-                            ${Object.keys(arch.summary || {}).map(name => `
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>${name}</span>
-                                    <span class="fw-bold text-success">${arch.summary[name]?.totalEarn || 0} ₽</span>
-                                </div>
-                                <div class="d-flex gap-3 text-secondary small mb-2">
-                                    <span>🚕 ${arch.summary[name]?.cityHours?.toFixed(1) || 0} ч</span>
-                                    <span>🛣️ ${arch.summary[name]?.interTrips || 0} поездок</span>
-                                </div>
-                            `).join('')}
-                            
-                            <hr class="my-3">
-                            <h6 class="fw-bold mb-2">Поездки:</h6>
-                            ${arch.trips.slice().reverse().map(t => `
-                                <div class="border-bottom pb-2 mb-2">
-                                    <div class="d-flex justify-content-between">
-                                        <span class="fw-bold">${t.driverName}</span>
-                                        <span class="text-success">${t.earn} ₽</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between text-secondary small">
-                                        <span>${t.date} • ${t.type}</span>
-                                        <span>${t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород')}</span>
-                                    </div>
-                                    ${t.comment ? `<div class="text-secondary small mt-1">💬 ${t.comment}</div>` : ''}
-                                </div>
-                            `).join('')}
-                            
-                            <div class="d-flex gap-2 mt-3">
-                                <button class="btn btn-sm btn-success flex-fill" onclick="exportArchive(${index})">
-                                    <i class="bi bi-file-earmark-excel"></i> Excel
-                                </button>
-                                <button class="btn btn-sm btn-primary flex-fill" onclick="printArchive(${index})">
-                                    <i class="bi bi-printer"></i> Печать
-                                </button>
-                                <button class="btn btn-sm btn-danger flex-fill" onclick="deleteArchive(${index})">
-                                    <i class="bi bi-trash"></i> Удалить
-                                </button>
+                            <div class="text-end">
+                                <span class="fs-5 fw-bold text-success">${arch.total || 0} ₽</span>
+                                <div><i class="bi bi-chevron-down"></i></div>
                             </div>
                         </div>
-                    </div>`;
-                }
-                document.getElementById('admin-archive-content').innerHTML = html;
-            }
-        };
-        
-        window.loadCuratorArchiveMonth = function() {
-            const month = document.getElementById('curator-archive-month-select').value;
-            if (!month) return;
+                    </div>
+                    <div class="archive-content hidden">
+                        <h6 class="fw-bold mb-3">Итоги по водителям:</h6>
+                        ${Object.keys(arch.summary || {}).map(name => `
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>${name}</span>
+                                <span class="fw-bold text-success">${arch.summary[name]?.totalEarn || 0} ₽</span>
+                            </div>
+                            <div class="d-flex gap-3 text-secondary small mb-2">
+                                <span>🚕 ${arch.summary[name]?.cityHours?.toFixed(1) || 0} ч</span>
+                                <span>🛣️ ${arch.summary[name]?.interTrips || 0} поездок</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            });
             
-            const archive = LOCAL_ARCHIVE.find(a => a.month === month);
-            if (archive) {
-                const index = LOCAL_ARCHIVE.findIndex(a => a.month === month);
-                let html = '';
-                if (index !== -1) {
-                    const arch = LOCAL_ARCHIVE[index];
-                    html = `<div class="archive-card">
-                        <div class="archive-header" onclick="toggleArchiveContent(this)">
-                            <div class="d-flex justify-content-between w-100">
-                                <div>
-                                    <h5 class="fw-bold mb-1">${arch.month}</h5>
-                                    <div class="text-secondary small">
-                                        <i class="bi bi-truck"></i> ${arch.trips.length} поездок
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <span class="fs-5 fw-bold text-success">${arch.total} ₽</span>
-                                    <div><i class="bi bi-chevron-down"></i></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="archive-content">
-                            <h6 class="fw-bold mb-3">Итоги по водителям:</h6>
-                            ${Object.keys(arch.summary || {}).map(name => `
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>${name}</span>
-                                    <span class="fw-bold text-success">${arch.summary[name]?.totalEarn || 0} ₽</span>
-                                </div>
-                                <div class="d-flex gap-3 text-secondary small mb-2">
-                                    <span>🚕 ${arch.summary[name]?.cityHours?.toFixed(1) || 0} ч</span>
-                                    <span>🛣️ ${arch.summary[name]?.interTrips || 0} поездок</span>
-                                </div>
-                            `).join('')}
-                            
-                            <hr class="my-3">
-                            <h6 class="fw-bold mb-2">Поездки:</h6>
-                            ${arch.trips.slice().reverse().map(t => `
-                                <div class="border-bottom pb-2 mb-2">
-                                    <div class="d-flex justify-content-between">
-                                        <span class="fw-bold">${t.driverName}</span>
-                                        <span class="text-success">${t.earn} ₽</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between text-secondary small">
-                                        <span>${t.date} • ${t.type}</span>
-                                        <span>${t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород')}</span>
-                                    </div>
-                                    ${t.comment ? `<div class="text-secondary small mt-1">💬 ${t.comment}</div>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>`;
-                }
-                document.getElementById('curator-archive-content').innerHTML = html;
-            }
-        };
+            document.getElementById('curator-archive-content').innerHTML = html || '<p class="text-center py-5 text-secondary">Нет архивов</p>';
+        }
         
         window.toggleArchiveContent = function(header) {
             const content = header.nextElementSibling;
             const icon = header.querySelector('.bi-chevron-down, .bi-chevron-up');
             content.classList.toggle('hidden');
-            if (content.classList.contains('hidden')) {
-                icon.classList.remove('bi-chevron-up');
-                icon.classList.add('bi-chevron-down');
-            } else {
-                icon.classList.remove('bi-chevron-down');
-                icon.classList.add('bi-chevron-up');
-            }
-        };
-        
-        window.deleteArchive = function(index) {
-            if (confirm('⚠️ Удалить этот архив?\nЭто действие нельзя отменить.')) {
-                LOCAL_ARCHIVE.splice(index, 1);
-                saveToStorage();
-                alert('✅ Архив удален');
-                loadArchiveList();
-                updateArchiveSelectors();
-            }
-        };
-        
-        window.clearAllArchives = function() {
-            if (confirm('⚠️ Удалить ВСЕ архивы?\nЭто действие нельзя отменить.')) {
-                LOCAL_ARCHIVE = [];
-                saveToStorage();
-                alert('✅ Все архивы удалены');
-                loadArchiveList();
-                updateArchiveSelectors();
-            }
-        };
-        
-        window.exportArchive = function(index) {
-            const archive = LOCAL_ARCHIVE[index];
-            if (!archive) return;
-            
-            let csv = "Водитель,Дата,Тип,Часы/Маршрут,Сумма,Комментарий\n";
-            archive.trips.forEach(t => {
-                const details = t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород');
-                csv += `${t.driverName},${t.date},${t.type},${details},${t.earn},${t.comment || ''}\n`;
-            });
-            
-            csv += `\nОБЩИЙ ИТОГ,,,${archive.total} ₽`;
-            
-            const blob = new Blob(["\uFEFF" + csv], {type: 'text/csv'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `shintorg_${archive.month}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-        };
-        
-        window.printArchive = function(index) {
-            const archive = LOCAL_ARCHIVE[index];
-            if (!archive) return;
-            
-            const w = window.open('', '_blank');
-            w.document.write(`
-                <html>
-                <head>
-                    <title>Шинторг - Архив ${archive.month}</title>
-                    <style>
-                        body { font-family: Arial; padding: 30px; max-width: 1200px; margin: 0 auto; }
-                        h1 { color: #0f5e7e; border-bottom: 2px solid #0f5e7e; padding-bottom: 10px; }
-                        h2 { color: #0f5e7e; }
-                        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-                        th { background: #0f5e7e; color: white; padding: 12px; }
-                        td { padding: 10px; border: 1px solid #ddd; }
-                        .total { background: #ffe68f; font-weight: bold; }
-                        .summary { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; }
-                    </style>
-                </head>
-                <body>
-                    <h1>Шинторг Сургут</h1>
-                    <h2>Архив: ${archive.month}</h2>
-                    
-                    <div class="summary">
-                        <h3>Итоги по водителям</h3>
-                        ${Object.keys(archive.summary || {}).map(name => `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <span><strong>${name}</strong></span>
-                                <span style="color: #28a745; font-weight: bold;">${archive.summary[name]?.totalEarn || 0} ₽</span>
-                            </div>
-                            <div style="display: flex; gap: 20px; color: #666; margin-bottom: 15px;">
-                                <span>🚕 Город: ${archive.summary[name]?.cityHours?.toFixed(1) || 0} ч</span>
-                                <span>🛣️ Межгород: ${archive.summary[name]?.interTrips || 0} поездок</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    <h3>Детальные поездки</h3>
-                    <table>
-                        <tr>
-                            <th>Водитель</th>
-                            <th>Дата</th>
-                            <th>Тип</th>
-                            <th>Маршрут</th>
-                            <th>Сумма</th>
-                            <th>Комментарий</th>
-                        </tr>
-                        ${archive.trips.map(t => `
-                            <tr>
-                                <td>${t.driverName}</td>
-                                <td>${t.date}</td>
-                                <td>${t.type}</td>
-                                <td>${t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород')}</td>
-                                <td>${t.earn} ₽</td>
-                                <td>${t.comment || ''}</td>
-                            </tr>
-                        `).join('')}
-                    </table>
-                    
-                    <h3 style="margin-top: 30px;">Общий итог: ${archive.total} ₽</h3>
-                    <p style="margin-top: 40px; color: #666;">Дата закрытия: ${new Date(archive.closedAt).toLocaleDateString()}</p>
-                </body>
-                </html>
-            `);
-            w.document.close();
-            w.print();
-        };
-        
-        // ============ ЭКСПОРТ ОТЧЕТОВ ============
-        window.exportDailyReportToExcel = function() {
-            if (!window.currentMonthTrips || window.currentMonthTrips.length === 0) {
-                alert('Нет данных для экспорта');
-                return;
-            }
-            
-            let csv = "Водитель,Дата,Тип,Маршрут,Сумма,Комментарий\n";
-            window.currentMonthTrips.forEach(t => {
-                const route = t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород');
-                csv += `${t.driverName},${t.date},${t.type},${route},${t.earn},${t.comment || ''}\n`;
-            });
-            
-            const blob = new Blob(["\uFEFF" + csv], {type: 'text/csv'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `shintorg_${currentReportMonth || 'report'}_daily.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-        };
-        
-        window.exportSummaryReportToExcel = function() {
-            if (!window.currentMonthTrips || window.currentMonthTrips.length === 0) {
-                alert('Нет данных для экспорта');
-                return;
-            }
-            
-            const summary = {};
-            window.currentMonthTrips.forEach(t => {
-                if (!summary[t.driverName]) {
-                    summary[t.driverName] = { cityHours: 0, interTrips: 0, earn: 0 };
-                }
-                if (t.type === 'город') summary[t.driverName].cityHours += t.hours || 0;
-                else summary[t.driverName].interTrips += 1;
-                summary[t.driverName].earn += t.earn || 0;
-            });
-            
-            let csv = "Водитель,Часы (город),Поездки (МГ),Заработано\n";
-            Object.keys(summary).sort().forEach(name => {
-                const s = summary[name];
-                csv += `${name},${s.cityHours.toFixed(1)} ч,${s.interTrips},${s.earn} ₽\n`;
-            });
-            
-            const total = window.currentMonthTrips.reduce((s, t) => s + (t.earn || 0), 0);
-            csv += `\nОБЩИЙ ИТОГ,,,${total} ₽`;
-            
-            const blob = new Blob(["\uFEFF" + csv], {type: 'text/csv'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `shintorg_${currentReportMonth || 'report'}_summary.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-        };
-        
-        window.printDailyReport = function() {
-            if (!window.currentMonthTrips || window.currentMonthTrips.length === 0) {
-                alert('Нет данных для печати');
-                return;
-            }
-            
-            const month = currentReportMonth || 'отчет';
-            const w = window.open('', '_blank');
-            
-            let tableHtml = '';
-            window.currentMonthTrips.slice().reverse().forEach(t => {
-                const route = t.type === 'город' ? t.hours + ' ч' : (t.direction || 'Межгород');
-                tableHtml += `<tr>
-                    <td>${t.driverName}</td>
-                    <td>${t.date}</td>
-                    <td>${t.type}</td>
-                    <td>${route}</td>
-                    <td>${t.earn} ₽</td>
-                    <td>${t.comment || ''}</td>
-                </tr>`;
-            });
-            
-            w.document.write(`
-                <html>
-                <head>
-                    <title>Шинторг - Отчет ${month}</title>
-                    <style>
-                        body { font-family: Arial; padding: 30px; max-width: 1200px; margin: 0 auto; }
-                        h1 { color: #0f5e7e; border-bottom: 2px solid #0f5e7e; padding-bottom: 10px; }
-                        h2 { color: #0f5e7e; }
-                        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-                        th { background: #0f5e7e; color: white; padding: 12px; }
-                        td { padding: 10px; border: 1px solid #ddd; }
-                    </style>
-                </head>
-                <body>
-                    <h1>Шинторг Сургут</h1>
-                    <h2>Посменный отчет: ${month}</h2>
-                    <table>
-                        <tr>
-                            <th>Водитель</th>
-                            <th>Дата</th>
-                            <th>Тип</th>
-                            <th>Маршрут</th>
-                            <th>Сумма</th>
-                            <th>Комментарий</th>
-                        </tr>
-                        ${tableHtml}
-                    </table>
-                    <p style="margin-top: 40px; color: #666;">Дата формирования: ${new Date().toLocaleDateString()}</p>
-                </body>
-                </html>
-            `);
-            w.document.close();
-            w.print();
-        };
-        
-        window.printSummaryReport = function() {
-            if (!window.currentMonthTrips || window.currentMonthTrips.length === 0) {
-                alert('Нет данных для печати');
-                return;
-            }
-            
-            const month = currentReportMonth || 'отчет';
-            
-            const summary = {};
-            let totalCityHours = 0;
-            let totalInterTrips = 0;
-            let totalEarn = 0;
-            
-            window.currentMonthTrips.forEach(t => {
-                if (!summary[t.driverName]) {
-                    summary[t.driverName] = { cityHours: 0, interTrips: 0, earn: 0 };
-                }
-                if (t.type === 'город') {
-                    summary[t.driverName].cityHours += t.hours || 0;
-                    totalCityHours += t.hours || 0;
-                } else {
-                    summary[t.driverName].interTrips += 1;
-                    totalInterTrips += 1;
-                }
-                summary[t.driverName].earn += t.earn || 0;
-                totalEarn += t.earn || 0;
-            });
-            
-            let tableHtml = '';
-            Object.keys(summary).sort().forEach(name => {
-                const s = summary[name];
-                tableHtml += `<tr>
-                    <td>${name}</td>
-                    <td>${s.cityHours.toFixed(1)} ч</td>
-                    <td>${s.interTrips}</td>
-                    <td>${s.earn} ₽</td>
-                </tr>`;
-            });
-            
-            const w = window.open('', '_blank');
-            w.document.write(`
-                <html>
-                <head>
-                    <title>Шинторг - Сводка ${month}</title>
-                    <style>
-                        body { font-family: Arial; padding: 30px; max-width: 1200px; margin: 0 auto; }
-                        h1 { color: #0f5e7e; border-bottom: 2px solid #0f5e7e; padding-bottom: 10px; }
-                        h2 { color: #0f5e7e; }
-                        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-                        th { background: #0f5e7e; color: white; padding: 12px; }
-                        td { padding: 10px; border: 1px solid #ddd; }
-                        .total { background: #ffe68f; font-weight: bold; }
-                        .summary { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; }
-                    </style>
-                </head>
-                <body>
-                    <h1>Шинторг Сургут</h1>
-                    <h2>Сводный отчет: ${month}</h2>
-                    
-                    <table>
-                        <tr>
-                            <th>Водитель</th>
-                            <th>Часы (город)</th>
-                            <th>Поездки (МГ)</th>
-                            <th>Заработано</th>
-                        </tr>
-                        ${tableHtml}
-                    </table>
-                    
-                    <div class="summary">
-                        <h3>Общие итоги</h3>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span><strong>Всего часов (город):</strong></span>
-                            <span>${totalCityHours.toFixed(1)} ч</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span><strong>Всего поездок (межгород):</strong></span>
-                            <span>${totalInterTrips}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span><strong>Количество водителей:</strong></span>
-                            <span>${Object.keys(summary).length}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 24px;">
-                            <span><strong>ОБЩИЙ ЗАРАБОТОК:</strong></span>
-                            <span style="color: #0f5e7e;"><strong>${totalEarn} ₽</strong></span>
-                        </div>
-                    </div>
-                    
-                    <p style="margin-top: 40px; color: #666;">Дата формирования: ${new Date().toLocaleDateString()}</p>
-                </body>
-                </html>
-            `);
-            w.document.close();
-            w.print();
-        };
-        
-        // ============ КУРАТОР ============
-        window.exportCuratorDailyReportToExcel = window.exportDailyReportToExcel;
-        window.exportCuratorSummaryReportToExcel = window.exportSummaryReportToExcel;
-        window.printCuratorDailyReport = window.printDailyReport;
-        window.printCuratorSummaryReport = window.printSummaryReport;
-        
-        // ============ ЗАКРЫТИЕ МЕСЯЦА - ИСПРАВЛЕНО ============
-        window.closeMonth = function() {
-            if (!confirm('⚠️ Закрыть текущий месяц? Все поездки будут архивированы и удалены из отчетов.')) return;
-            
-            const month = new Date().toISOString().slice(0, 7);
-            const monthTrips = LOCAL_TRIPS.filter(t => t.date && t.date.startsWith(month));
-            
-            if (monthTrips.length === 0) {
-                alert('❌ Нет поездок за текущий месяц');
-                return;
-            }
-            
-            const total = monthTrips.reduce((s, t) => s + (t.earn || 0), 0);
-            
-            // Составляем сводку по водителям
-            const summary = {};
-            monthTrips.forEach(t => {
-                if (!summary[t.driverName]) {
-                    summary[t.driverName] = { cityHours: 0, interTrips: 0, totalEarn: 0 };
-                }
-                if (t.type === 'город') summary[t.driverName].cityHours += t.hours || 0;
-                else summary[t.driverName].interTrips += 1;
-                summary[t.driverName].totalEarn += t.earn || 0;
-            });
-            
-            // Добавляем в архив
-            LOCAL_ARCHIVE.push({
-                month: month,
-                trips: JSON.parse(JSON.stringify(monthTrips)),
-                summary: summary,
-                total: total,
-                closedAt: new Date().toISOString()
-            });
-            
-            // ВАЖНО: УДАЛЯЕМ ВСЕ ПОЕЗДКИ ЗА ЭТОТ МЕСЯЦ
-            LOCAL_TRIPS = LOCAL_TRIPS.filter(t => !t.date || !t.date.startsWith(month));
-            saveToStorage();
-            
-            // Показываем отчет о закрытии
-            let reportText = `✅ Месяц ${month} закрыт!\n💰 ИТОГО: ${total} ₽\n\n`;
-            for (let name in summary) {
-                reportText += `${name}: 🚕 ${summary[name].cityHours.toFixed(1)} ч, 🛣️ ${summary[name].interTrips} поездок = ${summary[name].totalEarn} ₽\n`;
-            }
-            
-            alert(reportText);
-            
-            // Обновляем все интерфейсы
-            if (currentRole === 'admin') {
-                loadAdminData(); // Перезагружает все данные админа
-                // Очищаем выбранный месяц в отчетах
-                document.getElementById('report-month-select').value = '';
-                // Очищаем содержимое отчетов
-                document.getElementById('admin-daily-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет поездок за этот месяц</p>';
-                document.getElementById('admin-summary-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет данных</p>';
-                document.getElementById('admin-total-hours').innerHTML = '0 ч';
-                document.getElementById('admin-total-inter').innerHTML = '0';
-                document.getElementById('admin-total-earn').innerHTML = '0 ₽';
-            }
-            
-            if (currentRole === 'curator') {
-                loadCuratorData(); // Перезагружает все данные куратора
-                // Очищаем выбранный месяц в отчетах
-                document.getElementById('curator-report-month').value = '';
-                // Очищаем содержимое отчетов
-                document.getElementById('curator-daily-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет поездок за этот месяц</p>';
-                document.getElementById('curator-summary-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет данных</p>';
-                document.getElementById('curator-total-hours').innerHTML = '0 ч';
-                document.getElementById('curator-total-inter').innerHTML = '0';
-                document.getElementById('curator-total-earn').innerHTML = '0 ₽';
-            }
-            
-            // Обновляем селекторы месяцев
-            updateMonthSelectors();
-            updateArchiveSelectors();
-            
-            // Если открыта вкладка архива, показываем обновленный список
-            if (currentRole === 'admin' && document.getElementById('admin-archive-tab').classList.contains('hidden') === false) {
-                loadArchiveList();
-            }
-            if (currentRole === 'curator' && document.getElementById('curator-archive-tab').classList.contains('hidden') === false) {
-                loadArchiveList();
-            }
+            icon.classList.toggle('bi-chevron-down');
+            icon.classList.toggle('bi-chevron-up');
         };
         
         // ============ КУРАТОР ============
         function loadCuratorData() {
             loadCuratorDrivers();
-            loadArchiveList();
+            loadCuratorReports();
+            loadCuratorArchiveList();
             updateMonthSelectors();
             updateArchiveSelectors();
             
@@ -2797,6 +2065,7 @@
         
         function loadCuratorDrivers() {
             let html = '';
+            
             LOCAL_DRIVERS.forEach(driver => {
                 if (driver.status !== 'active') return;
                 
@@ -2810,80 +2079,164 @@
                     <td>${hasGeo ? '<span class="text-success">Движется</span>' : '—'}</td>
                     <td>
                         ${hasGeo ? 
-                            `<button class="btn btn-sm btn-outline-info" onclick="showDriverMap('${driver.phone}', '${driver.short || driver.name}')">
+                            `<button class="btn btn-sm btn-outline-info" onclick="showDriverMap('${driver.id}', '${driver.short || driver.name}')">
                                 <i class="bi bi-map"></i>
                             </button>` : '—'}
                     </td>
                 </tr>`;
             });
+            
             document.getElementById('curator-drivers-table').innerHTML = html || '<tr><td colspan="4" class="text-center">Нет активных водителей</td></tr>';
+        }
+        
+        function loadCuratorReports() {
+            const month = new Date().toISOString().slice(0, 7);
+            const monthTrips = LOCAL_TRIPS.filter(t => t.date && t.date.startsWith(month));
+            
+            const summary = {};
+            let total = 0;
+            
+            monthTrips.forEach(trip => {
+                if (!summary[trip.driverName]) {
+                    summary[trip.driverName] = { cityHours: 0, interTrips: 0, totalEarn: 0 };
+                }
+                if (trip.type === 'город') {
+                    summary[trip.driverName].cityHours += trip.hours || 0;
+                } else {
+                    summary[trip.driverName].interTrips += 1;
+                }
+                summary[trip.driverName].totalEarn += trip.earn || 0;
+                total += trip.earn || 0;
+            });
+            
+            let html = '';
+            Object.keys(summary).forEach(name => {
+                const s = summary[name];
+                html += `<div class="driver-stat-item">
+                    <div class="d-flex justify-content-between">
+                        <strong>${name}</strong>
+                        <span class="fw-bold text-success">${s.totalEarn} ₽</span>
+                    </div>
+                    <div class="small text-secondary mt-1">
+                        🚕 ${s.cityHours.toFixed(1)} ч / 🛣️ ${s.interTrips} поездок
+                    </div>
+                </div>`;
+            });
+            
+            document.getElementById('curator-monthly-summary').innerHTML = html || '<p class="text-center">Нет данных</p>';
+            document.getElementById('curator-month-total').innerHTML = `${total} ₽`;
         }
         
         window.loadCuratorMonthReport = function() {
             const month = document.getElementById('curator-report-month').value;
-            if (!month) {
-                // Если месяц не выбран, показываем пустые состояния
-                document.getElementById('curator-daily-report-content').innerHTML = '<p class="text-center text-secondary py-4">Выберите месяц</p>';
-                document.getElementById('curator-summary-report-content').innerHTML = '<p class="text-center text-secondary py-4">Выберите месяц</p>';
-                document.getElementById('curator-total-hours').innerHTML = '0 ч';
-                document.getElementById('curator-total-inter').innerHTML = '0';
-                document.getElementById('curator-total-earn').innerHTML = '0 ₽';
-                return;
-            }
+            if (!month) return;
             
             let monthTrips = LOCAL_TRIPS.filter(t => t.date && t.date.startsWith(month));
             
             if (monthTrips.length === 0) {
-                // Если нет поездок за этот месяц, показываем пустой отчет
-                document.getElementById('curator-daily-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет поездок за этот месяц</p>';
-                document.getElementById('curator-summary-report-content').innerHTML = '<p class="text-center text-secondary py-4">Нет данных</p>';
-                document.getElementById('curator-total-hours').innerHTML = '0 ч';
-                document.getElementById('curator-total-inter').innerHTML = '0';
-                document.getElementById('curator-total-earn').innerHTML = '0 ₽';
-                return;
+                const archive = LOCAL_ARCHIVE.find(a => a.month === month);
+                if (archive) monthTrips = archive.trips;
             }
             
-            currentReportMonth = month;
-            window.currentMonthTrips = monthTrips;
+            const summary = {};
+            let total = 0;
             
-            // Загружаем отчеты
-            loadAdminDailyReport(monthTrips);
-            loadAdminSummaryReport(monthTrips);
-            
-            // Обновляем кураторские контейнеры
-            document.getElementById('curator-daily-report-content').innerHTML = document.getElementById('admin-daily-report-content').innerHTML;
-            document.getElementById('curator-summary-report-content').innerHTML = document.getElementById('admin-summary-report-content').innerHTML;
-            document.getElementById('curator-total-hours').innerHTML = document.getElementById('admin-total-hours').innerHTML;
-            document.getElementById('curator-total-inter').innerHTML = document.getElementById('admin-total-inter').innerHTML;
-            document.getElementById('curator-total-earn').innerHTML = document.getElementById('admin-total-earn').innerHTML;
-        };
-        
-        window.switchCuratorReportTab = function(tab) {
-            const dailyContainer = document.getElementById('curator-daily-report-container');
-            const summaryContainer = document.getElementById('curator-summary-report-container');
-            const tabs = document.querySelectorAll('#curator-reports-tab .report-tab');
-            
-            if (tab === 'daily') {
-                dailyContainer.classList.remove('hidden');
-                summaryContainer.classList.add('hidden');
-                tabs[0].classList.add('active');
-                tabs[1].classList.remove('active');
-            } else {
-                dailyContainer.classList.add('hidden');
-                summaryContainer.classList.remove('hidden');
-                tabs[0].classList.remove('active');
-                tabs[1].classList.add('active');
-            }
-        };
-        
-        window.switchCuratorTab = function(tab) {
-            document.getElementById('curator-reports-tab').classList.toggle('hidden', tab !== 'reports');
-            document.getElementById('curator-archive-tab').classList.toggle('hidden', tab !== 'archive');
-            
-            document.querySelectorAll('#curator-cabinet .mobile-tabs .mobile-tab').forEach((el, i) => {
-                el.classList.toggle('active', (i === 0 && tab === 'reports') || (i === 1 && tab === 'archive'));
+            monthTrips.forEach(trip => {
+                if (!summary[trip.driverName]) {
+                    summary[trip.driverName] = { cityHours: 0, interTrips: 0, totalEarn: 0 };
+                }
+                if (trip.type === 'город') {
+                    summary[trip.driverName].cityHours += trip.hours || 0;
+                } else {
+                    summary[trip.driverName].interTrips += 1;
+                }
+                summary[trip.driverName].totalEarn += trip.earn || 0;
+                total += trip.earn || 0;
             });
+            
+            let html = '';
+            Object.keys(summary).forEach(name => {
+                const s = summary[name];
+                html += `<div class="driver-stat-item">
+                    <div class="d-flex justify-content-between">
+                        <strong>${name}</strong>
+                        <span class="fw-bold text-success">${s.totalEarn} ₽</span>
+                    </div>
+                    <div class="small text-secondary mt-1">
+                        🚕 ${s.cityHours.toFixed(1)} ч / 🛣️ ${s.interTrips} поездок
+                    </div>
+                </div>`;
+            });
+            
+            document.getElementById('curator-monthly-summary').innerHTML = html || '<p class="text-center">Нет данных</p>';
+            document.getElementById('curator-month-total').innerHTML = `${total} ₽`;
         };
+        
+        // ============ ЗАКРЫТИЕ МЕСЯЦА ============
+        window.closeMonth = async function() {
+            if (!confirm('⚠️ Закрыть текущий месяц? Все поездки будут архивированы.')) return;
+            
+            const month = new Date().toISOString().slice(0, 7);
+            
+            try {
+                const tripsSnapshot = await db.collection('trips').where('date', '>=', month + '-01').get();
+                
+                if (tripsSnapshot.empty) {
+                    alert('❌ Нет поездок за текущий месяц');
+                    return;
+                }
+                
+                const monthTrips = [];
+                const summary = {};
+                let total = 0;
+                
+                tripsSnapshot.forEach(doc => {
+                    const trip = doc.data();
+                    monthTrips.push({ id: doc.id, ...trip });
+                    total += trip.earn || 0;
+                    
+                    if (!summary[trip.driverName]) {
+                        summary[trip.driverName] = { cityHours: 0, interTrips: 0, totalEarn: 0 };
+                    }
+                    if (trip.type === 'город') {
+                        summary[trip.driverName].cityHours += trip.hours || 0;
+                    } else {
+                        summary[trip.driverName].interTrips += 1;
+                    }
+                    summary[trip.driverName].totalEarn += trip.earn || 0;
+                });
+                
+                await db.collection('archive').add({
+                    month: month,
+                    trips: monthTrips,
+                    summary: summary,
+                    total: total,
+                    closedAt: new Date().toISOString()
+                });
+                
+                tripsSnapshot.forEach(async (doc) => {
+                    await doc.ref.delete();
+                });
+                
+                alert(`✅ Месяц ${month} закрыт! Итого: ${total} ₽`);
+            } catch (error) {
+                console.error('Ошибка закрытия месяца:', error);
+                alert('❌ Ошибка закрытия месяца');
+            }
+        };
+        
+        // ============ ТАЙМЕР ============
+        function startShiftTimer() {
+            if (shiftTimer) clearInterval(shiftTimer);
+            shiftTimer = setInterval(() => {
+                if (!shiftActive) return;
+                const diff = Math.floor((new Date() - shiftStartTime) / 1000);
+                const h = Math.floor(diff / 3600).toString().padStart(2, '0');
+                const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+                const s = (diff % 60).toString().padStart(2, '0');
+                document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
+            }, 1000);
+        }
         
         // ============ НАСТРОЙКИ ============
         window.updateRate = function() {
@@ -2891,7 +2244,6 @@
             if (rate > 0) {
                 currentRate = rate;
                 document.getElementById('rate-display').innerHTML = `${rate} ₽/ч`;
-                localStorage.setItem('shintorg_rate', rate.toString());
                 alert('✅ Тариф обновлен');
             }
         };
@@ -2900,7 +2252,6 @@
             const newPass = document.getElementById('admin-new-pass').value;
             if (newPass) {
                 ADMIN_CRED.password = newPass;
-                saveToStorage();
                 alert('✅ Пароль администратора изменен');
                 document.getElementById('admin-new-pass').value = '';
             }
@@ -2910,7 +2261,6 @@
             const newPass = document.getElementById('curator-new-pass').value;
             if (newPass) {
                 CURATOR_CRED.password = newPass;
-                saveToStorage();
                 alert('✅ Пароль куратора изменен');
                 document.getElementById('curator-new-pass').value = '';
             }
@@ -2941,11 +2291,19 @@
                 el.classList.toggle('active', i === tabs.indexOf(tab));
             });
             
-            // Обновляем архивы при переходе на вкладку
             if (tab === 'archive') {
                 loadArchiveList();
                 updateArchiveSelectors();
             }
+        };
+        
+        window.switchCuratorTab = function(tab) {
+            document.getElementById('curator-reports-tab').classList.toggle('hidden', tab !== 'reports');
+            document.getElementById('curator-archive-tab').classList.toggle('hidden', tab !== 'archive');
+            
+            document.querySelectorAll('#curator-cabinet .mobile-tabs .mobile-tab').forEach((el, i) => {
+                el.classList.toggle('active', (i === 0 && tab === 'reports') || (i === 1 && tab === 'archive'));
+            });
         };
         
         window.showRegister = function() {
@@ -2959,13 +2317,45 @@
             document.getElementById('login-screen').classList.remove('hidden');
         };
         
+        // ============ СЕКРЕТНЫЙ ВХОД ============
+        window.showAdminSecret = function() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-secret-screen').classList.remove('hidden');
+        };
+        
+        window.resetAdminWithSecret = function() {
+            const secretKey = document.getElementById('admin-secret-key').value;
+            const newPass = document.getElementById('admin-new-password-secret').value;
+            
+            if (secretKey !== SECRET_ADMIN_KEY) {
+                alert('❌ Неверный секретный ключ');
+                return;
+            }
+            
+            if (newPass) {
+                ADMIN_CRED.password = newPass;
+                alert('✅ Пароль администратора изменен! Новый пароль: ' + newPass);
+            }
+            
+            backToLogin();
+        };
+        
+        // ============ ВЫХОД ============
         window.logout = function() {
             if (geoWatchId) navigator.geolocation.clearWatch(geoWatchId);
             if (shiftTimer) clearInterval(shiftTimer);
             
+            if (unsubscribeDrivers) unsubscribeDrivers();
+            if (unsubscribeTrips) unsubscribeTrips();
+            if (unsubscribeMessages) unsubscribeMessages();
+            if (unsubscribeArchive) unsubscribeArchive();
+            
             currentUser = null;
             currentRole = null;
             shiftActive = false;
+            
+            localStorage.removeItem('shintorg_current_user');
+            localStorage.removeItem('shintorg_current_role');
             
             document.getElementById('driver-cabinet').classList.add('hidden');
             document.getElementById('admin-cabinet').classList.add('hidden');
@@ -2978,12 +2368,16 @@
             document.getElementById('shift-end-btn').classList.add('hidden');
         };
         
-        // ============ ЗАГРУЗКА ОТЧЕТОВ ============
-        function loadAdminReports() {
-            const month = new Date().toISOString().slice(0, 7);
-            document.getElementById('report-month-select').value = month;
-            loadAdminMonthReport();
-        }
+        // ============ ЗАПУСК ============
+        window.onload = async function() {
+            const hasSession = await loadSession();
+            
+            if (!hasSession) {
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('rate-display').innerHTML = `${currentRate} ₽/ч`;
+            }
+        };
     </script>
 </body>
 </html>
