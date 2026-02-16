@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Шинторг • Офлайн CRM</title>
+    <title>Шинторг • CRM</title>
+    
+    <!-- Фавикон (эмодзи грузовик) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚛</text></svg>">
     
     <!-- Bootstrap 5 + Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,6 +15,10 @@
     <!-- Leaflet для карт -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
     <style>
         * {
@@ -25,7 +32,6 @@
             font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
         }
         
-        /* Мобильный контейнер для водителя и куратора */
         .mobile-container {
             max-width: 450px;
             width: 100%;
@@ -36,7 +42,6 @@
             position: relative;
         }
         
-        /* Админ-панель на весь экран */
         .admin-wrapper {
             max-width: 1600px;
             margin: 0 auto;
@@ -326,10 +331,35 @@
             font-size: 12px;
             color: #495057;
         }
+        
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 9999;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .connection-online {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .connection-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
     <!-- Индикаторы -->
+    <div id="connection-status" class="connection-status connection-offline">
+        <i class="bi bi-wifi-off"></i> Ожидание подключения...
+    </div>
+    
     <div id="sync-indicator" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: none;">
         <span class="sync-badge"><i class="bi bi-cloud-check"></i> Синхронизация...</span>
     </div>
@@ -340,15 +370,15 @@
     <!-- ЭКРАН ЗАГРУЗКИ -->
     <div id="loading-screen" class="vh-100 d-flex flex-column justify-content-center align-items-center" style="background: linear-gradient(145deg, #0f5e7e, #0a405a);">
         <div class="spinner-border text-white mb-3" style="width: 4rem; height: 4rem;"></div>
-        <h4 class="text-white">Шинторг Сургут</h4>
-        <p class="text-white-50">Загрузка...</p>
+        <h4 class="text-white">🚛 Шинторг Сургут</h4>
+        <p class="text-white-50">Подключение к облаку...</p>
     </div>
 
     <!-- ЭКРАН ВХОДА -->
     <div id="login-screen" class="hidden">
         <div class="mobile-container">
             <div class="app-header text-center">
-                <h2><i class="bi bi-truck"></i> ШИНТОРГ</h2>
+                <h2>🚛 ШИНТОРГ</h2>
                 <p class="mb-0 opacity-75">Учет смен и заработка</p>
             </div>
             
@@ -455,7 +485,7 @@
     <div id="driver-cabinet" class="hidden">
         <div class="mobile-container">
             <div class="app-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0"><i class="bi bi-truck"></i> ШИНТОРГ</h4>
+                <h4 class="mb-0">🚛 ШИНТОРГ</h4>
                 <span class="badge bg-white text-dark p-3 rounded-pill" id="driver-name-badge"></span>
             </div>
             
@@ -561,7 +591,7 @@
             <!-- ШАПКА -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="text-white bg-primary p-3 rounded-4 mb-0">
-                    <i class="bi bi-shield-lock"></i> АДМИН-ПАНЕЛЬ
+                    🚛 АДМИН-ПАНЕЛЬ
                 </h2>
                 <button class="btn btn-light rounded-pill px-5 py-3" onclick="logout()">
                     <i class="bi bi-box-arrow-right"></i> Выйти
@@ -862,7 +892,7 @@
     <div id="curator-cabinet" class="hidden">
         <div class="mobile-container">
             <div class="app-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0"><i class="bi bi-eye"></i> КУРАТОР</h4>
+                <h4 class="mb-0">👁️ КУРАТОР</h4>
                 <button class="btn btn-sm btn-light rounded-pill px-4" onclick="logout()">
                     <i class="bi bi-box-arrow-right"></i>
                 </button>
@@ -1037,6 +1067,20 @@
     </div>
 
     <script>
+        // ============ ВАШИ КЛЮЧИ FIREBASE ============
+        const firebaseConfig = {
+            apiKey: "AIZaSyBpeZQTrsP9I6Z6PqcxZqL7UYY2DsmV4",
+            authDomain: "crmshintorgsurgut.firebaseapp.com",
+            projectId: "crmshintorgsurgut",
+            storageBucket: "crmshintorgsurgut.firebasestorage.app",
+            messagingSenderId: "653155283388",
+            appId: "1:653155283388:web:1ba07a0e6c63b85c89bb9"
+        };
+
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
         // ============ ГЛОБАЛЬНЫЕ ДАННЫЕ ============
         let LOCAL_DRIVERS = [];
         let LOCAL_TRIPS = [];
@@ -1062,9 +1106,20 @@
         // Офлайн-очередь
         let offlineQueue = [];
         
+        // Флаг синхронизации
+        let isOnline = navigator.onLine;
+        let firebaseListener = null;
+        
         // ============ ИНИЦИАЛИЗАЦИЯ ============
-        window.onload = function() {
+        window.onload = async function() {
+            updateConnectionStatus();
+            
+            // Загружаем из localStorage
             loadFromStorage();
+            
+            // Настраиваем слушатели Firebase
+            setupFirebaseListeners();
+            
             setupOfflineDetection();
             setupAutoSync();
             
@@ -1080,6 +1135,130 @@
             updateMonthSelectors();
             updateArchiveSelectors();
         };
+        
+        // ============ СТАТУС ПОДКЛЮЧЕНИЯ ============
+        function updateConnectionStatus() {
+            const statusEl = document.getElementById('connection-status');
+            if (navigator.onLine) {
+                statusEl.className = 'connection-status connection-online';
+                statusEl.innerHTML = '<i class="bi bi-wifi"></i> Облако подключено';
+            } else {
+                statusEl.className = 'connection-status connection-offline';
+                statusEl.innerHTML = '<i class="bi bi-wifi-off"></i> Нет подключения к облаку';
+            }
+        }
+        
+        // ============ FIREBASE СЛУШАТЕЛИ ============
+        function setupFirebaseListeners() {
+            // Слушаем изменения водителей
+            db.collection('drivers').onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added' || change.type === 'modified') {
+                        const driverData = change.doc.data();
+                        const index = LOCAL_DRIVERS.findIndex(d => d.phone === driverData.phone);
+                        if (index >= 0) {
+                            LOCAL_DRIVERS[index] = driverData;
+                        } else {
+                            LOCAL_DRIVERS.push(driverData);
+                        }
+                    }
+                    if (change.type === 'removed') {
+                        LOCAL_DRIVERS = LOCAL_DRIVERS.filter(d => d.phone !== change.doc.data().phone);
+                    }
+                });
+                saveToStorage();
+                refreshUI();
+            });
+            
+            // Слушаем изменения поездок
+            db.collection('trips').onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added' || change.type === 'modified') {
+                        const tripData = change.doc.data();
+                        const index = LOCAL_TRIPS.findIndex(t => t.id === tripData.id);
+                        if (index >= 0) {
+                            LOCAL_TRIPS[index] = tripData;
+                        } else {
+                            LOCAL_TRIPS.push(tripData);
+                        }
+                    }
+                    if (change.type === 'removed') {
+                        LOCAL_TRIPS = LOCAL_TRIPS.filter(t => t.id !== change.doc.data().id);
+                    }
+                });
+                saveToStorage();
+                refreshUI();
+            });
+            
+            // Слушаем изменения сообщений
+            db.collection('messages').onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added' || change.type === 'modified') {
+                        const msgData = change.doc.data();
+                        const index = LOCAL_MESSAGES.findIndex(m => m.id === msgData.id);
+                        if (index >= 0) {
+                            LOCAL_MESSAGES[index] = msgData;
+                        } else {
+                            LOCAL_MESSAGES.push(msgData);
+                        }
+                    }
+                    if (change.type === 'removed') {
+                        LOCAL_MESSAGES = LOCAL_MESSAGES.filter(m => m.id !== change.doc.data().id);
+                    }
+                });
+                saveToStorage();
+                refreshUI();
+            });
+            
+            // Слушаем изменения архива
+            db.collection('archive').onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added' || change.type === 'modified') {
+                        const archData = change.doc.data();
+                        const index = LOCAL_ARCHIVE.findIndex(a => a.month === archData.month);
+                        if (index >= 0) {
+                            LOCAL_ARCHIVE[index] = archData;
+                        } else {
+                            LOCAL_ARCHIVE.push(archData);
+                        }
+                    }
+                    if (change.type === 'removed') {
+                        LOCAL_ARCHIVE = LOCAL_ARCHIVE.filter(a => a.month !== change.doc.data().month);
+                    }
+                });
+                saveToStorage();
+                refreshUI();
+            });
+        }
+        
+        // ============ ОТПРАВКА В FIREBASE ============
+        async function syncToFirebase(collection, data) {
+            if (!navigator.onLine) {
+                addToOfflineQueue('sync', { collection, data });
+                return;
+            }
+            
+            try {
+                document.getElementById('sync-indicator').style.display = 'block';
+                
+                if (collection === 'drivers') {
+                    await db.collection('drivers').doc(data.phone).set(data);
+                } else if (collection === 'trips') {
+                    await db.collection('trips').doc(data.id).set(data);
+                } else if (collection === 'messages') {
+                    await db.collection('messages').doc(data.id).set(data);
+                } else if (collection === 'archive') {
+                    await db.collection('archive').doc(data.month).set(data);
+                }
+                
+                setTimeout(() => {
+                    document.getElementById('sync-indicator').style.display = 'none';
+                }, 500);
+            } catch (error) {
+                console.error('Ошибка синхронизации:', error);
+                addToOfflineQueue('sync', { collection, data });
+            }
+        }
         
         // ============ ФОРМАТИРОВАНИЕ ДАТЫ И ВРЕМЕНИ ============
         function formatDateTime(dateTimeStr) {
@@ -1100,6 +1279,18 @@
             const endHours = end.getHours().toString().padStart(2, '0');
             const endMinutes = end.getMinutes().toString().padStart(2, '0');
             return `${startHours}:${startMinutes}-${endHours}:${endMinutes}`;
+        }
+        
+        // ============ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ============
+        function refreshUI() {
+            if (currentRole === 'driver') {
+                loadDriverData();
+                checkDriverMessages();
+            } else if (currentRole === 'admin') {
+                loadAdminData();
+            } else if (currentRole === 'curator') {
+                loadCuratorData();
+            }
         }
         
         // ============ ПРОВЕРКА СЕССИИ ============
@@ -1194,11 +1385,15 @@
         // ============ ОФЛАЙН ============
         function setupOfflineDetection() {
             window.addEventListener('online', function() {
+                isOnline = true;
+                updateConnectionStatus();
                 document.getElementById('offline-indicator').style.display = 'none';
                 processOfflineQueue();
             });
             
             window.addEventListener('offline', function() {
+                isOnline = false;
+                updateConnectionStatus();
                 document.getElementById('offline-indicator').style.display = 'block';
             });
             
@@ -1215,12 +1410,20 @@
             }, 30000);
         }
         
-        function processOfflineQueue() {
+        async function processOfflineQueue() {
             if (!navigator.onLine || offlineQueue.length === 0) return;
             
             document.getElementById('sync-indicator').style.display = 'block';
             
+            const queue = [...offlineQueue];
             offlineQueue = [];
+            
+            for (const item of queue) {
+                if (item.action === 'sync') {
+                    await syncToFirebase(item.data.collection, item.data.data);
+                }
+            }
+            
             saveToStorage();
             
             setTimeout(() => {
@@ -1327,7 +1530,7 @@
         };
         
         // ============ РЕГИСТРАЦИЯ ============
-        window.registerDriver = function() {
+        window.registerDriver = async function() {
             const name = document.getElementById('reg-name').value;
             const phone = document.getElementById('reg-phone').value;
             const pass = document.getElementById('reg-pass').value;
@@ -1365,6 +1568,7 @@
             
             LOCAL_DRIVERS.push(newDriver);
             saveToStorage();
+            await syncToFirebase('drivers', newDriver);
             
             alert('✅ Регистрация успешна! Теперь войдите.');
             backToLogin();
@@ -1390,7 +1594,7 @@
             if (geoWatchId) navigator.geolocation.clearWatch(geoWatchId);
             
             geoWatchId = navigator.geolocation.watchPosition(
-                (position) => {
+                async (position) => {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     
@@ -1401,6 +1605,7 @@
                         driver.location = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
                         driver.lastSeen = new Date();
                         saveToStorage();
+                        await syncToFirebase('drivers', driver);
                     }
                     
                     document.getElementById('geo-status-block').innerHTML = `
@@ -1453,7 +1658,7 @@
         };
         
         // ============ СМЕНА ============
-        window.startShift = function() {
+        window.startShift = async function() {
             if (!currentUser) return;
             
             shiftActive = true;
@@ -1465,6 +1670,7 @@
                 driver.shiftType = 'city';
                 driver.shiftStartTime = shiftStartTime.toISOString();
                 saveToStorage();
+                await syncToFirebase('drivers', driver);
             }
             
             document.getElementById('shift-start-btn').classList.add('hidden');
@@ -1473,13 +1679,13 @@
             startTimer();
             startGeolocation();
             
-            addToOfflineQueue('start_shift', { phone: currentUser.phone, time: shiftStartTime });
+            addToOfflineQueue('sync', { collection: 'drivers', data: driver });
             
             alert('🚕 Смена начата!');
         };
         
         // ============ ЗАВЕРШЕНИЕ СМЕНЫ ============
-        window.endShift = function() {
+        window.endShift = async function() {
             console.log('endShift вызвана');
             
             if (!shiftActive) {
@@ -1554,6 +1760,10 @@
             // СОХРАНЯЕМ ВСЕ ДАННЫЕ
             saveToStorage();
             
+            // Отправляем в Firebase
+            await syncToFirebase('trips', newTrip);
+            if (driver) await syncToFirebase('drivers', driver);
+            
             // Останавливаем геолокацию
             if (geoWatchId) {
                 navigator.geolocation.clearWatch(geoWatchId);
@@ -1574,7 +1784,7 @@
         };
         
         // ============ МЕЖГОРОД ============
-        window.addIntercityTrip = function() {
+        window.addIntercityTrip = async function() {
             if (!currentUser) return;
             
             const direction = document.getElementById('inter-direction').value || 'Межгород';
@@ -1606,6 +1816,7 @@
             
             LOCAL_TRIPS.push(newTrip);
             saveToStorage();
+            await syncToFirebase('trips', newTrip);
             
             document.getElementById('inter-direction').value = '';
             document.getElementById('inter-sum').value = '';
@@ -1675,12 +1886,13 @@
             }
         }
         
-        window.markMessageRead = function(messageId) {
+        window.markMessageRead = async function(messageId) {
             const msg = LOCAL_MESSAGES.find(m => m.id === messageId);
             if (msg) {
                 msg.read = true;
                 msg.readAt = new Date().toISOString();
                 saveToStorage();
+                await syncToFirebase('messages', msg);
                 checkDriverMessages();
             }
             
@@ -1716,15 +1928,20 @@
             document.getElementById('message-status-container').innerHTML = html || '<p class="text-center">Нет сообщений</p>';
         }
         
-        window.deleteMessage = function(messageId) {
+        window.deleteMessage = async function(messageId) {
             if (confirm('Удалить сообщение?')) {
                 LOCAL_MESSAGES = LOCAL_MESSAGES.filter(m => m.id !== messageId);
                 saveToStorage();
+                
+                if (navigator.onLine) {
+                    await db.collection('messages').doc(messageId).delete();
+                }
+                
                 loadMessageStatus();
             }
         };
         
-        window.sendMessageToDriver = function() {
+        window.sendMessageToDriver = async function() {
             const driverPhone = document.getElementById('message-driver-select').value;
             const text = document.getElementById('message-text').value;
             
@@ -1745,6 +1962,7 @@
             
             LOCAL_MESSAGES.push(newMsg);
             saveToStorage();
+            await syncToFirebase('messages', newMsg);
             
             document.getElementById('message-text').value = '';
             alert('✅ Сообщение отправлено');
@@ -1889,13 +2107,17 @@
             document.getElementById('admin-all-drivers-table').innerHTML = html || '<tr><td colspan="5" class="text-center">Нет водителей</td></tr>';
         }
         
-        window.deleteDriver = function(phone) {
+        window.deleteDriver = async function(phone) {
             if (confirm('⚠️ Точно удалить водителя?\nВсе его поездки и данные будут удалены.')) {
                 LOCAL_DRIVERS = LOCAL_DRIVERS.filter(d => d.phone !== phone);
                 LOCAL_TRIPS = LOCAL_TRIPS.filter(t => t.driverId !== phone);
                 LOCAL_MESSAGES = LOCAL_MESSAGES.filter(m => m.driverPhone !== phone);
                 
                 saveToStorage();
+                
+                if (navigator.onLine) {
+                    await db.collection('drivers').doc(phone).delete();
+                }
                 
                 alert('✅ Водитель удален из системы');
                 loadAdminDrivers();
@@ -1926,13 +2148,14 @@
             }
         };
         
-        window.editDriverPassword = function(phone) {
+        window.editDriverPassword = async function(phone) {
             const newPass = prompt('Введите новый пароль для водителя:');
             if (newPass) {
                 const driver = LOCAL_DRIVERS.find(d => d.phone === phone);
                 if (driver) {
                     driver.password = newPass;
                     saveToStorage();
+                    await syncToFirebase('drivers', driver);
                     alert('✅ Пароль обновлен');
                     loadAdminDrivers();
                     loadAllDrivers();
@@ -1972,7 +2195,7 @@
             document.getElementById('admin-trips-table').innerHTML = html || '<tr><td colspan="7" class="text-center">Нет поездок</td></tr>';
         }
         
-        window.editTrip = function(tripId) {
+        window.editTrip = async function(tripId) {
             const trip = LOCAL_TRIPS.find(t => t.id === tripId);
             if (!trip) return;
             
@@ -1984,15 +2207,21 @@
             // НЕ пересчитываем по тарифу, оставляем введенную сумму
             
             saveToStorage();
+            await syncToFirebase('trips', trip);
             alert('✅ Поездка обновлена');
             loadAdminTrips();
             loadAdminReports();
         };
         
-        window.deleteTrip = function(tripId) {
+        window.deleteTrip = async function(tripId) {
             if (confirm('⚠️ Удалить поездку?')) {
                 LOCAL_TRIPS = LOCAL_TRIPS.filter(t => t.id !== tripId);
                 saveToStorage();
+                
+                if (navigator.onLine) {
+                    await db.collection('trips').doc(tripId).delete();
+                }
+                
                 alert('✅ Поездка удалена');
                 loadAdminTrips();
                 loadAdminReports();
@@ -2527,20 +2756,36 @@
             }
         };
         
-        window.deleteArchive = function(index) {
+        window.deleteArchive = async function(index) {
             if (confirm('⚠️ Удалить этот архив?\nЭто действие нельзя отменить.')) {
+                const archive = LOCAL_ARCHIVE[index];
                 LOCAL_ARCHIVE.splice(index, 1);
                 saveToStorage();
+                
+                if (navigator.onLine) {
+                    await db.collection('archive').doc(archive.month).delete();
+                }
+                
                 alert('✅ Архив удален');
                 loadArchiveList();
                 updateArchiveSelectors();
             }
         };
         
-        window.clearAllArchives = function() {
+        window.clearAllArchives = async function() {
             if (confirm('⚠️ Удалить ВСЕ архивы?\nЭто действие нельзя отменить.')) {
                 LOCAL_ARCHIVE = [];
                 saveToStorage();
+                
+                if (navigator.onLine) {
+                    const snapshot = await db.collection('archive').get();
+                    const batch = db.batch();
+                    snapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                }
+                
                 alert('✅ Все архивы удалены');
                 loadArchiveList();
                 updateArchiveSelectors();
@@ -2815,7 +3060,7 @@
         };
         
         // ============ ЗАКРЫТИЕ МЕСЯЦА ============
-        window.closeMonth = function() {
+        window.closeMonth = async function() {
             if (!confirm('⚠️ Закрыть текущий месяц? Все поездки будут архивированы и удалены из отчетов.')) return;
             
             const month = new Date().toISOString().slice(0, 7);
@@ -2840,19 +3085,29 @@
             });
             
             // Добавляем в архив
-            LOCAL_ARCHIVE.push({
+            const archiveData = {
                 month: month,
                 trips: JSON.parse(JSON.stringify(monthTrips)),
                 summary: summary,
                 total: total,
                 closedAt: new Date().toISOString()
-            });
+            };
+            
+            LOCAL_ARCHIVE.push(archiveData);
             
             // Удаляем поездки за этот месяц
             LOCAL_TRIPS = LOCAL_TRIPS.filter(t => !t.date || !t.date.startsWith(month));
             
             // СОХРАНЯЕМ
             saveToStorage();
+            await syncToFirebase('archive', archiveData);
+            
+            // Удаляем поездки из Firebase
+            if (navigator.onLine) {
+                for (const trip of monthTrips) {
+                    await db.collection('trips').doc(trip.id).delete();
+                }
+            }
             
             const [year, monthNum] = month.split('-');
             const displayMonth = `${monthNum}.${year.slice(-2)}`;
@@ -2943,7 +3198,7 @@
             alert('✅ Бекап сохранен');
         };
         
-        window.importBackup = function() {
+        window.importBackup = async function() {
             const fileInput = document.getElementById('backup-file');
             if (!fileInput.files[0]) {
                 alert('❌ Выберите файл');
@@ -2951,7 +3206,7 @@
             }
             
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const backup = JSON.parse(e.target.result);
                     
@@ -2964,6 +3219,23 @@
                     if (backup.curatorCred) CURATOR_CRED = backup.curatorCred;
                     
                     saveToStorage();
+                    
+                    // Синхронизируем с Firebase
+                    if (navigator.onLine) {
+                        for (const driver of LOCAL_DRIVERS) {
+                            await syncToFirebase('drivers', driver);
+                        }
+                        for (const trip of LOCAL_TRIPS) {
+                            await syncToFirebase('trips', trip);
+                        }
+                        for (const msg of LOCAL_MESSAGES) {
+                            await syncToFirebase('messages', msg);
+                        }
+                        for (const arch of LOCAL_ARCHIVE) {
+                            await syncToFirebase('archive', arch);
+                        }
+                    }
+                    
                     alert('✅ Бекап восстановлен');
                     
                     if (currentRole === 'admin') loadAdminData();
