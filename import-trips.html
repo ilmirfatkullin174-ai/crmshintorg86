@@ -1,43 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Шинторг - Импорт поездок</title>
-    <style>
-        body { font-family: Arial; padding: 20px; background: #0a3a4a; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 30px; box-shadow: 0 0 30px rgba(0,0,0,0.2); }
-        h1 { color: #0f5e7e; text-align: center; }
-        .header { background: #0f5e7e; color: white; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
-        pre { background: #f5f5f5; padding: 15px; border-radius: 10px; max-height: 400px; overflow-y: auto; }
-        .btn { background: #0f5e7e; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; }
-        .btn:hover { background: #0a405a; }
-    </style>
+    <title>Импорт поездок</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h2>🚛 ШИНТОРГ СУРГУТ</h2>
-            <p>Импорт поездок за Февраль 2026</p>
-        </div>
-
-        <div style="margin-bottom: 20px; padding: 15px; background: #e8f4fa; border-radius: 15px;">
-            <h3>📋 ДАННЫЕ ДЛЯ ИМПОРТА:</h3>
-            <p><strong>Эдуард Абрамов</strong> - +79224433529 - 2 поездки (2800 + 1400)</p>
-            <p><strong>Темирбаев АА</strong> - +79097103813 - 2 поездки (1400 + 4900)</p>
-            <p><strong>Бойчук В</strong> - +79128158503 - 1 поездка (3000)</p>
-            <p><strong>Перевозкин Михаил</strong> - +79048782592 - 2 поездки (1400 + 1400)</p>
-            <p><strong>💰 ОБЩАЯ СУММА: 16 300 ₽</strong></p>
-        </div>
-
-        <div id="status" style="text-align: center; margin-bottom: 10px; font-weight: bold;"></div>
-        <pre id="result">Нажми кнопку для запуска импорта...</pre>
-        
-        <button class="btn" onclick="importTrips()">▶ ЗАПУСТИТЬ ИМПОРТ</button>
-    </div>
+    <h2>🚛 ИМПОРТ ПОЕЗДОК (НЕ ТРОГАЕТ ОСНОВНОЙ КОД)</h2>
+    <button onclick="importTrips()">▶ ЗАПУСТИТЬ</button>
+    <pre id="result"></pre>
 
     <script>
-        // 🔥 FIREBASE КЛЮЧИ
         firebase.initializeApp({
             apiKey: "AIzaSyASdFFIJbPOvGCs0IP66pojpFfCO1FU81A",
             authDomain: "shintorg86-crm.firebaseapp.com",
@@ -48,147 +21,38 @@
         });
 
         const db = firebase.firestore();
-        const status = document.getElementById('status');
         const result = document.getElementById('result');
 
-        // ✅ ТЕЛЕФОНЫ ВОДИТЕЛЕЙ (ПРИВЯЗКА БУДЕТ ПО НИМ)
-        const drivers = {
-            "Эдуард Абрамов": "+79224433529",
-            "Темирбаев АА": "+79097103813",
-            "Бойчук В": "+79128158503",
-            "Перевозкин Михаил": "+79048782592"
-        };
-
-        // ✅ ПОЕЗДКИ (ПРИВЯЗАНЫ К ТЕЛЕФОНАМ)
-        const trips = [
-            // Эдуард Абрамов
-            {
-                driverName: "Эдуард Абрамов",
-                phone: "+79224433529",
-                date: "2026-02-10",
-                type: "город",
-                hours: 2,
-                earn: 2800,
-                comment: "10:45-12:45"
-            },
-            {
-                driverName: "Эдуард Абрамов",
-                phone: "+79224433529",
-                date: "2026-02-13",
-                type: "город",
-                hours: 1,
-                earn: 1400,
-                comment: "14:26-15:26"
-            },
-            
-            // Темирбаев АА
-            {
-                driverName: "Темирбаев АА",
-                phone: "+79097103813",
-                date: "2026-02-11",
-                type: "город",
-                hours: 1,
-                earn: 1400,
-                comment: "10:50-11:50"
-            },
-            {
-                driverName: "Темирбаев АА",
-                phone: "+79097103813",
-                date: "2026-02-16",
-                type: "город",
-                hours: 3.5,
-                earn: 4900,
-                comment: "11:00-14:30"
-            },
-            
-            // Бойчук В
-            {
-                driverName: "Бойчук В",
-                phone: "+79128158503",
-                date: "2026-02-11",
-                type: "межгород",
-                direction: "Покачи",
-                earn: 3000,
-                comment: "12:15 догруз"
-            },
-            
-            // Перевозкин Михаил
-            {
-                driverName: "Перевозкин Михаил",
-                phone: "+79048782592",
-                date: "2026-02-12",
-                type: "город",
-                hours: 1,
-                earn: 1400,
-                comment: "14:40-15:40"
-            },
-            {
-                driverName: "Перевозкин Михаил",
-                phone: "+79048782592",
-                date: "2026-02-14",
-                type: "город",
-                hours: 1,
-                earn: 1400,
-                comment: "14:39-15:39"
-            }
-        ];
-
         async function importTrips() {
-            status.innerHTML = "⏳ ИМПОРТ НАЧАТ...";
-            result.innerHTML = "";
+            result.innerHTML = "⏳ Импорт...\n";
             
-            let success = 0;
-            let errors = 0;
-            let totalEarn = 0;
+            const trips = [
+                { phone: "+79224433529", name: "Эдуард Абрамов", date: "2026-02-10", hours: 2, earn: 2800 },
+                { phone: "+79224433529", name: "Эдуард Абрамов", date: "2026-02-13", hours: 1, earn: 1400 },
+                { phone: "+79097103813", name: "Темирбаев АА", date: "2026-02-11", hours: 1, earn: 1400 },
+                { phone: "+79097103813", name: "Темирбаев АА", date: "2026-02-16", hours: 3.5, earn: 4900 },
+                { phone: "+79128158503", name: "Бойчук В", date: "2026-02-11", type: "межгород", direction: "Покачи", earn: 3000 },
+                { phone: "+79048782592", name: "Перевозкин Михаил", date: "2026-02-12", hours: 1, earn: 1400 },
+                { phone: "+79048782592", name: "Перевозкин Михаил", date: "2026-02-14", hours: 1, earn: 1400 }
+            ];
 
-            for (let i = 0; i < trips.length; i++) {
-                const trip = trips[i];
-                
+            for (let t of trips) {
                 try {
-                    const tripData = {
-                        // ⚡ ВАЖНО: ПРИВЯЗКА ИДЕТ ПО ТЕЛЕФОНУ (driverId)
-                        driverId: trip.phone,
-                        driverName: trip.driverName,
-                        date: trip.date,
-                        type: trip.type,
-                        earn: trip.earn,
-                        comment: trip.comment || ""
-                    };
-
-                    if (trip.type === "город") {
-                        tripData.hours = trip.hours;
-                    }
-
-                    if (trip.type === "межгород") {
-                        tripData.direction = trip.direction;
-                    }
-
-                    tripData.timestamp = new Date().toISOString();
-
-                    await db.collection('trips').add(tripData);
-                    
-                    result.innerHTML += `✅ ${trip.driverName} - ${trip.date} - ${trip.earn}₽ (тел: ${trip.phone})\n`;
-                    success++;
-                    totalEarn += trip.earn;
+                    await db.collection('trips').add({
+                        driverId: t.phone,
+                        driverName: t.name,
+                        date: t.date,
+                        type: t.type || "город",
+                        hours: t.hours || null,
+                        direction: t.direction || null,
+                        earn: t.earn,
+                        timestamp: new Date().toISOString()
+                    });
+                    result.innerHTML += `✅ ${t.name}\n`;
                 } catch (e) {
-                    result.innerHTML += `❌ Ошибка: ${trip.driverName} - ${e.message}\n`;
-                    errors++;
+                    result.innerHTML += `❌ ${t.name}: ${e.message}\n`;
                 }
             }
-
-            result.innerHTML += `\n═══════════════════════════════════\n`;
-            result.innerHTML += `💰 ОБЩИЙ ЗАРАБОТОК: ${totalEarn} ₽\n`;
-            result.innerHTML += `✅ Успешно добавлено: ${success}\n`;
-            result.innerHTML += `❌ Ошибок: ${errors}\n`;
-            result.innerHTML += `═══════════════════════════════════\n\n`;
-            result.innerHTML += `📱 ТЕЛЕФОНЫ ВОДИТЕЛЕЙ (для регистрации):\n`;
-            
-            for (let name in drivers) {
-                result.innerHTML += `${name}: ${drivers[name]}\n`;
-            }
-            
-            result.innerHTML += `\n✅ ИМПОРТ ЗАВЕРШЕН!`;
-            status.innerHTML = "✅ ИМПОРТ ВЫПОЛНЕН УСПЕШНО!";
         }
     </script>
 </body>
