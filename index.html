@@ -470,7 +470,7 @@
 <body>
     <!-- Версия приложения -->
     <div class="version-footer" id="app-version">
-        🚛 Шинторг CRM • Версия 2.1.0
+        🚛 Шинторг CRM • Версия 2.1.1
     </div>
     
     <!-- Индикаторы -->
@@ -1263,7 +1263,7 @@
 
     <script>
         // ============ ВЕРСИЯ ПРИЛОЖЕНИЯ ============
-        const APP_VERSION = '2.1.0';
+        const APP_VERSION = '2.1.1';
         
         // ============ ВАШИ КЛЮЧИ FIREBASE ============
         const firebaseConfig = {
@@ -2087,6 +2087,9 @@
         // ============ ЗАГРУЗКА ДАННЫХ ВОДИТЕЛЯ (ТОЛЬКО ТЕКУЩИЙ МЕСЯЦ) ============
         function loadDriverData() {
             if (!currentUser) return;
+            
+            // ✅ Обновляем отображение тарифа
+            document.getElementById('driver-rate').innerText = currentRate;
             
             const driverTrips = LOCAL_TRIPS.filter(t => t.driverId === currentUser.phone);
             const today = new Date().toISOString().split('T')[0];
@@ -3619,8 +3622,23 @@
             const rate = parseFloat(document.getElementById('admin-rate-input').value);
             if (rate > 0) {
                 currentRate = rate;
+                
+                // Обновляем отображение на экране входа
                 document.getElementById('rate-display').innerHTML = `${rate} ₽/ч`;
+                
+                // Если сейчас открыт кабинет водителя — обновляем тариф там
+                if (currentRole === 'driver') {
+                    document.getElementById('driver-rate').innerText = rate;
+                }
+                
+                // Если открыт кабинет админа — обновляем поле ввода
+                if (currentRole === 'admin') {
+                    document.getElementById('admin-rate-input').value = rate;
+                }
+                
+                // Сохраняем в localStorage
                 saveToStorage();
+                
                 alert('✅ Тариф обновлен');
             }
         };
