@@ -30,6 +30,9 @@
         body {
             background: #0a3a4a;
             font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+            position: relative;
+            min-height: 100vh;
+            padding-bottom: 60px;
         }
         
         .mobile-container {
@@ -118,6 +121,8 @@
             color: #b34141;
             padding: 10px 16px;
             border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
         }
         
         .mobile-tabs {
@@ -162,6 +167,8 @@
             color: #8e6200;
             padding: 6px 14px;
             border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
         }
         
         .status-offline {
@@ -169,6 +176,8 @@
             color: #5d6f7e;
             padding: 6px 14px;
             border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
         }
         
         .message-bubble {
@@ -178,6 +187,23 @@
             margin: 12px 16px;
             border-left: 8px solid #0f5e7e;
             animation: slideIn 0.3s ease;
+            position: relative;
+        }
+        
+        .message-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: red;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
         }
         
         @keyframes slideIn {
@@ -298,6 +324,67 @@
             line-height: 1.2;
         }
         
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .status-indicator-working {
+            background: #28a745;
+            box-shadow: 0 0 8px #28a745;
+        }
+        
+        .status-indicator-intercity {
+            background: #ffc107;
+            box-shadow: 0 0 8px #ffc107;
+        }
+        
+        .status-indicator-offline {
+            background: #6c757d;
+        }
+        
+        .version-footer {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 12px;
+            color: #0f5e7e;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 9999;
+        }
+        
+        .rate-info {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 5px;
+            text-align: center;
+        }
+        
+        .search-box {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 50px;
+            border: 1px solid #dee2e6;
+            width: 100%;
+        }
+        
+        .geo-link {
+            color: #0f5e7e;
+            text-decoration: none;
+            font-size: 12px;
+        }
+        
+        .geo-link:hover {
+            text-decoration: underline;
+        }
+        
         @media (max-width: 768px) {
             .admin-wrapper {
                 padding: 10px;
@@ -308,6 +395,12 @@
             .mobile-tab {
                 font-size: 12px;
                 padding: 10px 8px;
+            }
+            .version-footer {
+                bottom: 5px;
+                right: 5px;
+                font-size: 10px;
+                padding: 3px 10px;
             }
         }
         
@@ -352,9 +445,34 @@
             background: #f8d7da;
             color: #721c24;
         }
+        
+        .message-icon {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .unread-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
+    <!-- Версия приложения -->
+    <div class="version-footer" id="app-version">
+        🚛 Шинторг CRM • Версия 2.1.0
+    </div>
+    
     <!-- Индикаторы -->
     <div id="connection-status" class="connection-status connection-offline">
         <i class="bi bi-wifi-off"></i> Ожидание подключения...
@@ -486,7 +604,13 @@
         <div class="mobile-container">
             <div class="app-header d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">🚛 ШИНТОРГ</h4>
-                <span class="badge bg-white text-dark p-3 rounded-pill" id="driver-name-badge"></span>
+                <div class="d-flex align-items-center">
+                    <div class="message-icon me-3" onclick="checkDriverMessages()" style="cursor: pointer;">
+                        <i class="bi bi-envelope fs-4 text-white"></i>
+                        <span id="message-unread-badge" class="unread-badge hidden">0</span>
+                    </div>
+                    <span class="badge bg-white text-dark p-3 rounded-pill" id="driver-name-badge"></span>
+                </div>
             </div>
             
             <!-- СТАТИСТИКА -->
@@ -502,6 +626,9 @@
                         <h3 class="text-primary fw-bold" id="driver-month-earn">0 ₽</h3>
                         <small id="driver-total-earn">всего: 0 ₽</small>
                     </div>
+                </div>
+                <div class="rate-info" id="driver-rate-info">
+                    <i class="bi bi-info-circle"></i> Тариф: <span id="driver-rate">1400</span> ₽/ч
                 </div>
             </div>
             
@@ -523,11 +650,11 @@
                 <div class="mobile-card">
                     <div class="timer-big mb-3" id="timer-display">00:00:00</div>
                     
-                    <button class="btn btn-success mobile-btn mb-2" id="shift-start-btn" onclick="startShift()">
+                    <button class="btn btn-success mobile-btn mb-2" id="shift-start-btn" onclick="confirmStartShift()">
                         <i class="bi bi-play-fill"></i> Начать смену
                     </button>
                     
-                    <button class="btn btn-warning mobile-btn mb-2 hidden" id="shift-end-btn" onclick="endShift()">
+                    <button class="btn btn-warning mobile-btn mb-2 hidden" id="shift-end-btn" onclick="confirmEndShift()">
                         <i class="bi bi-stop-fill"></i> Завершить смену
                     </button>
                     
@@ -545,7 +672,7 @@
             <div id="driver-inter-panel" class="hidden">
                 <div class="mobile-card">
                     <div class="mb-3">
-                        <input type="text" class="form-control form-control-lg rounded-pill" id="inter-direction" placeholder="Направление">
+                        <input type="text" class="form-control form-control-lg rounded-pill" id="inter-direction" placeholder="Направление (например: Сургут-Когалым)">
                     </div>
                     <div class="mb-3">
                         <input type="number" class="form-control form-control-lg rounded-pill" id="inter-sum" placeholder="Сумма ставки">
@@ -559,9 +686,14 @@
                 </div>
             </div>
             
-            <!-- ИСТОРИЯ -->
+            <!-- ИСТОРИЯ (ТОЛЬКО ТЕКУЩИЙ МЕСЯЦ) -->
             <div class="mobile-card">
-                <h5 class="mb-3"><i class="bi bi-clock-history"></i> Мои поездки</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Поездки за текущий месяц</h5>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="refreshDriverData()">
+                        <i class="bi bi-arrow-repeat"></i> Обновить
+                    </button>
+                </div>
                 <div style="max-height: 350px; overflow-y: auto;">
                     <table class="table table-sm">
                         <thead>
@@ -593,9 +725,14 @@
                 <h2 class="text-white bg-primary p-3 rounded-4 mb-0">
                     🚛 АДМИН-ПАНЕЛЬ
                 </h2>
-                <button class="btn btn-light rounded-pill px-5 py-3" onclick="logout()">
-                    <i class="bi bi-box-arrow-right"></i> Выйти
-                </button>
+                <div>
+                    <button class="btn btn-light rounded-pill px-4 py-2 me-2" onclick="refreshAdminData()">
+                        <i class="bi bi-arrow-repeat"></i> Обновить
+                    </button>
+                    <button class="btn btn-light rounded-pill px-5 py-3" onclick="logout()">
+                        <i class="bi bi-box-arrow-right"></i> Выйти
+                    </button>
+                </div>
             </div>
             
             <!-- СТАТИСТИКА -->
@@ -639,7 +776,12 @@
             <!-- АКТИВНЫЕ ВОДИТЕЛИ -->
             <div id="admin-drivers-tab">
                 <div class="admin-card">
-                    <h5 class="mb-4"><i class="bi bi-people-fill"></i> Активные водители</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0"><i class="bi bi-people-fill"></i> Активные водители</h5>
+                        <div style="width: 300px;">
+                            <input type="text" class="search-box mb-0" id="admin-drivers-search" placeholder="🔍 Поиск по имени или телефону..." onkeyup="filterAdminDrivers()">
+                        </div>
+                    </div>
                     <div class="table-responsive-custom">
                         <table class="admin-table">
                             <thead>
@@ -686,7 +828,12 @@
             <!-- ВСЕ ВОДИТЕЛИ -->
             <div id="admin-all-drivers-tab" class="hidden">
                 <div class="admin-card">
-                    <h5 class="mb-4"><i class="bi bi-database"></i> Все зарегистрированные водители</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0"><i class="bi bi-database"></i> Все зарегистрированные водители</h5>
+                        <div style="width: 300px;">
+                            <input type="text" class="search-box mb-0" id="admin-all-drivers-search" placeholder="🔍 Поиск по имени или телефону..." onkeyup="filterAllDrivers()">
+                        </div>
+                    </div>
                     <div class="table-responsive-custom">
                         <table class="admin-table">
                             <thead>
@@ -801,7 +948,7 @@
                         </div>
                         
                         <div class="mt-4">
-                            <button class="btn btn-warning btn-lg w-100" onclick="closeMonth()">
+                            <button class="btn btn-warning btn-lg w-100" onclick="confirmCloseMonth()">
                                 <i class="bi bi-file-earmark-check"></i> ЗАКРЫТЬ МЕСЯЦ
                             </button>
                         </div>
@@ -876,7 +1023,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <input type="file" class="form-control mb-2" id="backup-file" accept=".json">
-                                    <button class="btn btn-outline-warning btn-lg w-100" onclick="importBackup()">
+                                    <button class="btn btn-outline-warning btn-lg w-100" onclick="confirmImportBackup()">
                                         <i class="bi bi-upload"></i> Восстановить
                                     </button>
                                 </div>
@@ -893,9 +1040,14 @@
         <div class="mobile-container">
             <div class="app-header d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">👁️ КУРАТОР</h4>
-                <button class="btn btn-sm btn-light rounded-pill px-4" onclick="logout()">
-                    <i class="bi bi-box-arrow-right"></i>
-                </button>
+                <div>
+                    <button class="btn btn-sm btn-light rounded-pill px-3 me-2" onclick="refreshCuratorData()">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light rounded-pill px-4" onclick="logout()">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
+                </div>
             </div>
             
             <!-- СТАТИСТИКА (КАРТОЧКИ) -->
@@ -930,7 +1082,12 @@
             <!-- АКТИВНЫЕ ВОДИТЕЛИ -->
             <div id="curator-drivers-tab">
                 <div class="mobile-card">
-                    <h5 class="mb-3"><i class="bi bi-people"></i> Водители на линии</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> Водители на линии</h5>
+                        <div style="width: 200px;">
+                            <input type="text" class="search-box mb-0" id="curator-drivers-search" placeholder="🔍 Поиск..." onkeyup="filterCuratorDrivers()">
+                        </div>
+                    </div>
                     <div style="max-height: 400px; overflow-y: auto;">
                         <table class="table table-sm">
                             <thead>
@@ -963,7 +1120,7 @@
                     
                     <!-- КНОПКА ЗАКРЫТИЯ МЕСЯЦА -->
                     <div class="mb-3">
-                        <button class="btn btn-warning w-100 rounded-pill" onclick="closeMonth()">
+                        <button class="btn btn-warning w-100 rounded-pill" onclick="confirmCloseMonth()">
                             <i class="bi bi-file-earmark-check"></i> Закрыть месяц
                         </button>
                     </div>
@@ -1066,10 +1223,51 @@
         <div id="driver-map" style="flex: 1; width: 100%;"></div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ ПОЕЗДКИ -->
+    <div id="edit-trip-modal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 99999; display: flex; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 30px; padding: 30px; max-width: 500px; width: 90%;">
+            <h4 class="mb-4">✏️ Редактировать поездку</h4>
+            <div class="mb-3">
+                <label>Дата и время</label>
+                <input type="datetime-local" class="form-control" id="edit-trip-datetime">
+            </div>
+            <div class="mb-3">
+                <label>Тип</label>
+                <select class="form-select" id="edit-trip-type">
+                    <option value="город">Город</option>
+                    <option value="межгород">Межгород</option>
+                </select>
+            </div>
+            <div class="mb-3" id="edit-trip-hours-container">
+                <label>Часы</label>
+                <input type="number" class="form-control" id="edit-trip-hours" step="0.5">
+            </div>
+            <div class="mb-3" id="edit-trip-direction-container" style="display: none;">
+                <label>Направление</label>
+                <input type="text" class="form-control" id="edit-trip-direction">
+            </div>
+            <div class="mb-3">
+                <label>Сумма</label>
+                <input type="number" class="form-control" id="edit-trip-earn">
+            </div>
+            <div class="mb-3">
+                <label>Комментарий</label>
+                <textarea class="form-control" id="edit-trip-comment" rows="2"></textarea>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-success flex-fill" onclick="saveEditedTrip()">Сохранить</button>
+                <button class="btn btn-secondary flex-fill" onclick="closeEditTripModal()">Отмена</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ============ ВЕРСИЯ ПРИЛОЖЕНИЯ ============
+        const APP_VERSION = '2.1.0';
+        
         // ============ ВАШИ КЛЮЧИ FIREBASE ============
         const firebaseConfig = {
-            apiKey: "AIZaSyBpeZQTrsP9I6Z6PqcxZqL7UYY2DsmV4",
+            apiKey: "AIzaSyBpeZQTrsP9I6Z6PqcxZqL7UYY2DsmV4",
             authDomain: "crmshintorgsurgut.firebaseapp.com",
             projectId: "crmshintorgsurgut",
             storageBucket: "crmshintorgsurgut.firebasestorage.app",
@@ -1110,8 +1308,16 @@
         let isOnline = navigator.onLine;
         let firebaseListener = null;
         
+        // ID редактируемой поездки
+        let editingTripId = null;
+        
+        // Лог закрытия месяца
+        let monthCloseLog = [];
+        
         // ============ ИНИЦИАЛИЗАЦИЯ ============
         window.onload = async function() {
+            document.getElementById('app-version').innerHTML = `🚛 Шинторг CRM • Версия ${APP_VERSION}`;
+            
             updateConnectionStatus();
             
             // Загружаем из localStorage
@@ -1286,10 +1492,26 @@
             if (currentRole === 'driver') {
                 loadDriverData();
                 checkDriverMessages();
+                updateUnreadBadge();
             } else if (currentRole === 'admin') {
                 loadAdminData();
             } else if (currentRole === 'curator') {
                 loadCuratorData();
+            }
+        }
+        
+        // ============ ОБНОВЛЕНИЕ БЕЙДЖА СООБЩЕНИЙ ============
+        function updateUnreadBadge() {
+            if (!currentUser || currentRole !== 'driver') return;
+            
+            const unreadCount = LOCAL_MESSAGES.filter(m => m.driverPhone === currentUser.phone && !m.read).length;
+            const badge = document.getElementById('message-unread-badge');
+            
+            if (unreadCount > 0) {
+                badge.classList.remove('hidden');
+                badge.innerText = unreadCount;
+            } else {
+                badge.classList.add('hidden');
             }
         }
         
@@ -1319,9 +1541,11 @@
                         document.getElementById('login-screen').classList.add('hidden');
                         document.getElementById('driver-cabinet').classList.remove('hidden');
                         document.getElementById('driver-name-badge').innerHTML = `<i class="bi bi-person-circle"></i> ${driver?.short || currentUser.name}`;
+                        document.getElementById('driver-rate').innerText = currentRate;
                         
                         loadDriverData();
                         checkDriverMessages();
+                        updateUnreadBadge();
                     }
                     else if (currentRole === 'admin') {
                         document.getElementById('login-screen').classList.add('hidden');
@@ -1361,6 +1585,7 @@
                 const archive = localStorage.getItem('shintorg_archive');
                 const rate = localStorage.getItem('shintorg_rate');
                 const queue = localStorage.getItem('shintorg_queue');
+                const log = localStorage.getItem('shintorg_month_log');
                 
                 if (drivers) LOCAL_DRIVERS = JSON.parse(drivers) || [];
                 if (trips) LOCAL_TRIPS = JSON.parse(trips) || [];
@@ -1368,6 +1593,7 @@
                 if (archive) LOCAL_ARCHIVE = JSON.parse(archive) || [];
                 if (rate) currentRate = parseFloat(rate);
                 if (queue) offlineQueue = JSON.parse(queue) || [];
+                if (log) monthCloseLog = JSON.parse(log) || [];
             } catch (e) {
                 console.error('Ошибка загрузки:', e);
             }
@@ -1380,6 +1606,7 @@
             localStorage.setItem('shintorg_archive', JSON.stringify(LOCAL_ARCHIVE));
             localStorage.setItem('shintorg_rate', currentRate.toString());
             localStorage.setItem('shintorg_queue', JSON.stringify(offlineQueue));
+            localStorage.setItem('shintorg_month_log', JSON.stringify(monthCloseLog));
         }
         
         // ============ ОФЛАЙН ============
@@ -1470,6 +1697,7 @@
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('driver-cabinet').classList.remove('hidden');
                 document.getElementById('driver-name-badge').innerHTML = `<i class="bi bi-person-circle"></i> ${driver.short || driver.name}`;
+                document.getElementById('driver-rate').innerText = currentRate;
                 
                 if (driver.status === 'active' && driver.shiftType === 'city') {
                     shiftActive = true;
@@ -1484,6 +1712,7 @@
                 
                 loadDriverData();
                 checkDriverMessages();
+                updateUnreadBadge();
                 
                 alert(`✅ Добро пожаловать, ${driver.short || driver.name}`);
             } else {
@@ -1587,7 +1816,7 @@
             }, 1000);
         }
         
-        // ============ ГЕОЛОКАЦИЯ (ТОЛЬКО ДЛЯ ГОРОДА) ============
+        // ============ ГЕОЛОКАЦИЯ ============
         function startGeolocation() {
             if (!currentUser || !navigator.geolocation) return;
             
@@ -1657,9 +1886,36 @@
             }
         };
         
+        // ============ ПОДТВЕРЖДЕНИЕ НАЧАЛА СМЕНЫ ============
+        window.confirmStartShift = function() {
+            if (!currentUser) return;
+            
+            if (confirm('🚕 Начать смену?')) {
+                startShift();
+            }
+        };
+        
+        // ============ ПОДТВЕРЖДЕНИЕ ЗАВЕРШЕНИЯ СМЕНЫ ============
+        window.confirmEndShift = function() {
+            if (!shiftActive) {
+                alert('Смена не активна');
+                return;
+            }
+            
+            if (confirm('⚠️ Завершить смену?')) {
+                endShift();
+            }
+        };
+        
         // ============ СМЕНА ============
         window.startShift = async function() {
             if (!currentUser) return;
+            
+            // Автосохранение комментария
+            const savedComment = localStorage.getItem('last_shift_comment');
+            if (savedComment) {
+                document.getElementById('shift-comment').value = savedComment;
+            }
             
             shiftActive = true;
             shiftStartTime = new Date();
@@ -1702,29 +1958,31 @@
             
             // Вычисляем количество секунд
             const shiftSeconds = Math.floor((shiftEndTime - shiftStartTime) / 1000);
-            
-            // Переводим в часы
             let shiftHours = shiftSeconds / 3600;
-            let wholeHours = Math.floor(shiftHours);
-            let minutesPart = (shiftHours - wholeHours) * 60;
             
-            // Округляем до 0.5 часа
-            if (minutesPart < 15) {
-                shiftHours = wholeHours;
-            } else if (minutesPart < 45) {
-                shiftHours = wholeHours + 0.5;
-            } else {
-                shiftHours = wholeHours + 1;
-            }
-            
-            // Минимум 1 час
+            // ✅ МИНИМУМ 1 ЧАС
             if (shiftHours < 1) {
                 shiftHours = 1;
+            } else {
+                // Отделяем часы и минуты
+                let wholeHours = Math.floor(shiftHours);
+                let minutesPart = (shiftHours - wholeHours) * 60;
+                
+                if (minutesPart < 15) {
+                    shiftHours = wholeHours; // отбрасываем минуты
+                } else if (minutesPart < 45) {
+                    shiftHours = wholeHours + 0.5; // +0.5
+                } else {
+                    shiftHours = wholeHours + 1; // +1 час
+                }
             }
             
             // Расчет заработка
             const shiftEarn = Math.round(shiftHours * currentRate);
             const comment = document.getElementById('shift-comment').value || '';
+            
+            // Сохраняем комментарий для следующего раза
+            localStorage.setItem('last_shift_comment', comment);
             
             // Формируем временной диапазон
             const timeRange = formatTimeRange(shiftStartTime, shiftEndTime);
@@ -1826,20 +2084,26 @@
             loadDriverData();
         };
         
-        // ============ ЗАГРУЗКА ДАННЫХ ВОДИТЕЛЯ ============
+        // ============ ЗАГРУЗКА ДАННЫХ ВОДИТЕЛЯ (ТОЛЬКО ТЕКУЩИЙ МЕСЯЦ) ============
         function loadDriverData() {
             if (!currentUser) return;
             
             const driverTrips = LOCAL_TRIPS.filter(t => t.driverId === currentUser.phone);
             const today = new Date().toISOString().split('T')[0];
-            const month = today.slice(0, 7);
+            const currentMonth = today.slice(0, 7); // Текущий месяц (2026-02)
             
-            const todayTrips = driverTrips.filter(t => t.date === today);
+            // ✅ БЕРЁМ ТОЛЬКО ПОЕЗДКИ ЗА ТЕКУЩИЙ МЕСЯЦ
+            const monthTrips = driverTrips.filter(t => t.date && t.date.startsWith(currentMonth));
+            const todayTrips = monthTrips.filter(t => t.date === today);
+            
+            // Считаем за сегодня
             const todayEarn = todayTrips.reduce((s, t) => s + (t.earn || 0), 0);
             const todayHours = todayTrips.filter(t => t.type === 'город').reduce((s, t) => s + (t.hours || 0), 0);
             
-            const monthTrips = driverTrips.filter(t => t.date.startsWith(month));
+            // Считаем за текущий месяц
             const monthEarn = monthTrips.reduce((s, t) => s + (t.earn || 0), 0);
+            
+            // ВСЕГО за всё время (для информации)
             const totalEarn = driverTrips.reduce((s, t) => s + (t.earn || 0), 0);
             
             document.getElementById('driver-today-earn').innerHTML = `${todayEarn} ₽`;
@@ -1847,8 +2111,9 @@
             document.getElementById('driver-month-earn').innerHTML = `${monthEarn} ₽`;
             document.getElementById('driver-total-earn').innerHTML = `всего: ${totalEarn} ₽`;
             
+            // ✅ ТАБЛИЦА ПОЕЗДОК - ТОЛЬКО ТЕКУЩИЙ МЕСЯЦ
             let html = '';
-            driverTrips.slice().reverse().forEach(trip => {
+            monthTrips.slice().reverse().forEach(trip => {
                 const displayDate = trip.dateTime || trip.date;
                 html += `<tr>
                     <td>${displayDate} ${trip.timeRange ? '<br><small class="text-secondary">' + trip.timeRange + '</small>' : ''}</td>
@@ -1857,8 +2122,21 @@
                     <td><small class="text-secondary">${trip.comment || ''}</small></td>
                 </tr>`;
             });
-            document.getElementById('driver-trips-table').innerHTML = html || '<tr><td colspan="4" class="text-center">Нет поездок</td></tr>';
+            
+            if (monthTrips.length === 0) {
+                html = '<tr><td colspan="4" class="text-center">В этом месяце поездок пока нет</td></tr>';
+            }
+            
+            document.getElementById('driver-trips-table').innerHTML = html;
         }
+        
+        // ============ ОБНОВЛЕНИЕ ДАННЫХ ВОДИТЕЛЯ ============
+        window.refreshDriverData = function() {
+            loadDriverData();
+            checkDriverMessages();
+            updateUnreadBadge();
+            alert('🔄 Данные обновлены');
+        };
         
         // ============ СООБЩЕНИЯ ============
         function checkDriverMessages() {
@@ -1894,6 +2172,7 @@
                 saveToStorage();
                 await syncToFirebase('messages', msg);
                 checkDriverMessages();
+                updateUnreadBadge();
             }
             
             if (currentRole === 'admin') {
@@ -1984,6 +2263,11 @@
             document.getElementById('admin-total-drivers').innerHTML = LOCAL_DRIVERS.length;
         }
         
+        window.refreshAdminData = function() {
+            loadAdminData();
+            alert('🔄 Данные обновлены');
+        };
+        
         function getActiveDriversThisMonth() {
             const month = new Date().toISOString().slice(0, 7);
             const activeDrivers = new Set();
@@ -2019,25 +2303,28 @@
                 
                 let statusText = '⚪ Офлайн';
                 let statusClass = 'status-offline';
+                let statusIndicator = '<span class="status-indicator status-indicator-offline"></span>';
                 
                 if (driver.status === 'active') {
                     if (driver.shiftType === 'city') {
                         statusText = '🏙️ Работает (город)';
                         statusClass = 'status-working';
+                        statusIndicator = '<span class="status-indicator status-indicator-working"></span>';
                     } else if (driver.shiftType === 'intercity') {
                         statusText = '🛣️ Межгород';
                         statusClass = 'status-intercity';
+                        statusIndicator = '<span class="status-indicator status-indicator-intercity"></span>';
                     }
                 }
                 
                 const hasGeo = driver.lat && driver.lng;
                 
-                html += `<tr>
+                html += `<tr class="driver-row" data-name="${driver.name?.toLowerCase()}" data-phone="${driver.phone}">
                     <td>
                         <div class="fw-bold">${driver.short || driver.name}</div>
                     </td>
                     <td>${driver.phone}</td>
-                    <td><span class="${statusClass} px-3 py-2">${statusText}</span></td>
+                    <td><span class="${statusClass} px-3 py-2">${statusIndicator}${statusText}</span></td>
                     <td>${hasGeo ? '<span class="text-success"><i class="bi bi-geo-alt-fill"></i> Есть</span>' : '—'}</td>
                     <td>
                         ${hasGeo ? `<button class="btn btn-sm btn-outline-info" onclick="showDriverMap('${driver.phone}', '${driver.short || driver.name}')">
@@ -2069,13 +2356,33 @@
             document.getElementById('admin-inter-count').innerHTML = inter;
         }
         
+        // ============ ФИЛЬТРАЦИЯ ВОДИТЕЛЕЙ (АДМИН) ============
+        window.filterAdminDrivers = function() {
+            const searchText = document.getElementById('admin-drivers-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#admin-drivers-table .driver-row');
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const phone = row.getAttribute('data-phone') || '';
+                
+                if (name.includes(searchText) || phone.includes(searchText)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        };
+        
         function loadAllDrivers() {
             let html = '';
             
             LOCAL_DRIVERS.forEach(driver => {
                 let statusText = driver.status === 'active' ? '🟢 Активен' : '⚪ Офлайн';
+                let statusIndicator = driver.status === 'active' ? 
+                    '<span class="status-indicator status-indicator-working"></span>' : 
+                    '<span class="status-indicator status-indicator-offline"></span>';
                 
-                html += `<tr>
+                html += `<tr class="all-driver-row" data-name="${driver.name?.toLowerCase()}" data-phone="${driver.phone}">
                     <td>
                         <div class="fw-bold">${driver.short || driver.name}</div>
                     </td>
@@ -2090,7 +2397,7 @@
                     </td>
                     <td>
                         <span class="${driver.status === 'active' ? 'status-working' : 'status-offline'} px-3 py-2">
-                            ${statusText}
+                            ${statusIndicator}${statusText}
                         </span>
                     </td>
                     <td>
@@ -2106,6 +2413,23 @@
             
             document.getElementById('admin-all-drivers-table').innerHTML = html || '<tr><td colspan="5" class="text-center">Нет водителей</td></tr>';
         }
+        
+        // ============ ФИЛЬТРАЦИЯ ВСЕХ ВОДИТЕЛЕЙ ============
+        window.filterAllDrivers = function() {
+            const searchText = document.getElementById('admin-all-drivers-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#admin-all-drivers-table .all-driver-row');
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const phone = row.getAttribute('data-phone') || '';
+                
+                if (name.includes(searchText) || phone.includes(searchText)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        };
         
         window.deleteDriver = async function(phone) {
             if (confirm('⚠️ Точно удалить водителя?\nВсе его поездки и данные будут удалены.')) {
@@ -2185,6 +2509,9 @@
                         <button class="btn btn-sm btn-success" onclick="editTrip('${trip.id}')">
                             <i class="bi bi-check-lg"></i>
                         </button>
+                        <button class="btn btn-sm btn-primary" onclick="openEditTripModal('${trip.id}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
                         <button class="btn btn-sm btn-danger" onclick="deleteTrip('${trip.id}')">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -2204,10 +2531,108 @@
                 trip.earn = newEarn;
             }
             
-            // НЕ пересчитываем по тарифу, оставляем введенную сумму
+            // Если есть часы, можно пересчитать по тарифу
+            if (trip.type === 'город' && trip.hours) {
+                const recalc = confirm('Пересчитать сумму по текущему тарифу?');
+                if (recalc) {
+                    trip.earn = Math.round(trip.hours * currentRate);
+                }
+            }
             
             saveToStorage();
             await syncToFirebase('trips', trip);
+            alert('✅ Поездка обновлена');
+            loadAdminTrips();
+            loadAdminReports();
+        };
+        
+        // ============ РЕДАКТИРОВАНИЕ ПОЕЗДКИ (ПОЛНОЕ) ============
+        window.openEditTripModal = function(tripId) {
+            const trip = LOCAL_TRIPS.find(t => t.id === tripId);
+            if (!trip) return;
+            
+            editingTripId = tripId;
+            
+            // Заполняем поля
+            if (trip.startTime) {
+                const date = new Date(trip.startTime);
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                document.getElementById('edit-trip-datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+            
+            document.getElementById('edit-trip-type').value = trip.type;
+            document.getElementById('edit-trip-earn').value = trip.earn;
+            document.getElementById('edit-trip-comment').value = trip.comment || '';
+            
+            if (trip.type === 'город') {
+                document.getElementById('edit-trip-hours-container').style.display = 'block';
+                document.getElementById('edit-trip-direction-container').style.display = 'none';
+                document.getElementById('edit-trip-hours').value = trip.hours || 1;
+            } else {
+                document.getElementById('edit-trip-hours-container').style.display = 'none';
+                document.getElementById('edit-trip-direction-container').style.display = 'block';
+                document.getElementById('edit-trip-direction').value = trip.direction || 'Межгород';
+            }
+            
+            document.getElementById('edit-trip-modal').classList.remove('hidden');
+        };
+        
+        window.closeEditTripModal = function() {
+            document.getElementById('edit-trip-modal').classList.add('hidden');
+            editingTripId = null;
+        };
+        
+        window.saveEditedTrip = async function() {
+            if (!editingTripId) return;
+            
+            const trip = LOCAL_TRIPS.find(t => t.id === editingTripId);
+            if (!trip) return;
+            
+            // Обновляем дату и время
+            const newDateTime = document.getElementById('edit-trip-datetime').value;
+            if (newDateTime) {
+                const newDate = new Date(newDateTime);
+                trip.startTime = newDate.toISOString();
+                trip.endTime = newDate.toISOString();
+                trip.date = newDate.toISOString().split('T')[0];
+                trip.dateTime = formatDateTime(newDate);
+            }
+            
+            // Обновляем тип
+            const newType = document.getElementById('edit-trip-type').value;
+            trip.type = newType;
+            
+            // Обновляем специфичные поля
+            if (newType === 'город') {
+                const hours = parseFloat(document.getElementById('edit-trip-hours').value);
+                if (!isNaN(hours) && hours > 0) {
+                    trip.hours = hours;
+                }
+                delete trip.direction;
+            } else {
+                const direction = document.getElementById('edit-trip-direction').value;
+                trip.direction = direction || 'Межгород';
+                delete trip.hours;
+            }
+            
+            // Обновляем сумму
+            const earn = parseFloat(document.getElementById('edit-trip-earn').value);
+            if (!isNaN(earn) && earn > 0) {
+                trip.earn = earn;
+            }
+            
+            // Обновляем комментарий
+            trip.comment = document.getElementById('edit-trip-comment').value;
+            
+            // Сохраняем
+            saveToStorage();
+            await syncToFirebase('trips', trip);
+            
+            closeEditTripModal();
             alert('✅ Поездка обновлена');
             loadAdminTrips();
             loadAdminReports();
@@ -2405,6 +2830,11 @@
             }
         }
         
+        window.refreshCuratorData = function() {
+            loadCuratorData();
+            alert('🔄 Данные обновлены');
+        };
+        
         function loadCuratorDrivers() {
             let html = '';
             LOCAL_DRIVERS.forEach(driver => {
@@ -2412,22 +2842,45 @@
                 
                 let statusText = driver.shiftType === 'city' ? '🏙️ Город' : '🛣️ Межгород';
                 let statusClass = driver.shiftType === 'city' ? 'status-working' : 'status-intercity';
+                let statusIndicator = driver.shiftType === 'city' ? 
+                    '<span class="status-indicator status-indicator-working"></span>' : 
+                    '<span class="status-indicator status-indicator-intercity"></span>';
                 const hasGeo = driver.lat && driver.lng;
                 
-                html += `<tr>
+                html += `<tr class="curator-driver-row" data-name="${driver.name?.toLowerCase()}" data-phone="${driver.phone}">
                     <td>${driver.short || driver.name}</td>
-                    <td><span class="${statusClass} px-3 py-2">${statusText}</span></td>
+                    <td><span class="${statusClass} px-3 py-2">${statusIndicator}${statusText}</span></td>
                     <td>${hasGeo ? '<span class="text-success"><i class="bi bi-geo-alt-fill"></i> Есть</span>' : '—'}</td>
                     <td>
                         ${hasGeo ? 
                             `<button class="btn btn-sm btn-outline-info" onclick="showDriverMap('${driver.phone}', '${driver.short || driver.name}')">
                                 <i class="bi bi-map"></i>
                             </button>` : '—'}
+                        ${hasGeo ? `<a href="https://maps.google.com/?q=${driver.lat},${driver.lng}" target="_blank" class="geo-link ms-1">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>` : ''}
                     </td>
                 </tr>`;
             });
             document.getElementById('curator-drivers-table').innerHTML = html || '<tr><td colspan="4" class="text-center">Нет активных водителей</td></tr>';
         }
+        
+        // ============ ФИЛЬТРАЦИЯ КУРАТОРА ============
+        window.filterCuratorDrivers = function() {
+            const searchText = document.getElementById('curator-drivers-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#curator-drivers-table .curator-driver-row');
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const phone = row.getAttribute('data-phone') || '';
+                
+                if (name.includes(searchText) || phone.includes(searchText)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        };
         
         window.switchCuratorTab = function(tab) {
             document.getElementById('curator-drivers-tab').classList.toggle('hidden', tab !== 'drivers');
@@ -2591,6 +3044,7 @@
                             <div class="text-secondary">
                                 <i class="bi bi-truck"></i> ${archive.trips.length} поездок • ${archive.total} ₽
                             </div>
+                            ${archive.closedBy ? `<small class="text-secondary">Закрыл: ${archive.closedBy}</small>` : ''}
                         </div>
                         <div>
                             <button class="btn btn-sm btn-success me-2" onclick="exportArchive(${index})">
@@ -2663,6 +3117,7 @@
                             <div class="text-secondary">
                                 <i class="bi bi-truck"></i> ${arch.trips.length} поездок • ${arch.total} ₽
                             </div>
+                            ${arch.closedBy ? `<small class="text-secondary">Закрыл: ${arch.closedBy}</small>` : ''}
                         </div>
                         <div>
                             <button class="btn btn-sm btn-success me-2" onclick="exportArchive(${index})">
@@ -2722,6 +3177,7 @@
                             <div class="text-secondary">
                                 <i class="bi bi-truck"></i> ${archive.trips.length} поездок • ${archive.total} ₽
                             </div>
+                            ${archive.closedBy ? `<small class="text-secondary">Закрыл: ${archive.closedBy}</small>` : ''}
                         </div>
                         <div>
                             <button class="btn btn-sm btn-success me-2" onclick="exportArchive(${index})">
@@ -3059,10 +3515,25 @@
             w.print();
         };
         
-        // ============ ЗАКРЫТИЕ МЕСЯЦА ============
-        window.closeMonth = async function() {
-            if (!confirm('⚠️ Закрыть текущий месяц? Все поездки будут архивированы и удалены из отчетов.')) return;
+        // ============ ЗАКРЫТИЕ МЕСЯЦА С ПОДТВЕРЖДЕНИЕМ ============
+        window.confirmCloseMonth = function() {
+            const month = new Date().toISOString().slice(0, 7);
+            const [year, monthNum] = month.split('-');
+            const displayMonth = `${monthNum}.${year.slice(-2)}`;
             
+            const message = `⚠️ ЗАКРЫТИЕ МЕСЯЦА ${displayMonth}\n\n` +
+                `После закрытия:\n` +
+                `✅ У водителей в кабинете поездки за этот месяц исчезнут\n` +
+                `✅ Счётчик заработка у водителей обнулится\n` +
+                `✅ Архив сохранится в админ-панели\n\n` +
+                `Продолжить?`;
+            
+            if (confirm(message)) {
+                closeMonth();
+            }
+        };
+        
+        window.closeMonth = async function() {
             const month = new Date().toISOString().slice(0, 7);
             const monthTrips = LOCAL_TRIPS.filter(t => t.date && t.date.startsWith(month));
             
@@ -3084,13 +3555,14 @@
                 summary[t.driverName].totalEarn += t.earn || 0;
             });
             
-            // Добавляем в архив
+            // Добавляем в архив с информацией о том, кто закрыл
             const archiveData = {
                 month: month,
                 trips: JSON.parse(JSON.stringify(monthTrips)),
                 summary: summary,
                 total: total,
-                closedAt: new Date().toISOString()
+                closedAt: new Date().toISOString(),
+                closedBy: currentUser?.name || (currentRole === 'admin' ? 'Администратор' : 'Куратор')
             };
             
             LOCAL_ARCHIVE.push(archiveData);
@@ -3131,6 +3603,11 @@
                 document.getElementById('curator-total-hours').innerHTML = '0 ч';
                 document.getElementById('curator-total-inter').innerHTML = '0';
                 document.getElementById('curator-total-earn').innerHTML = '0 ₽';
+            }
+            
+            // Если водитель сейчас в системе, обновляем его данные
+            if (currentRole === 'driver') {
+                loadDriverData();
             }
             
             updateMonthSelectors();
@@ -3174,7 +3651,7 @@
             document.getElementById('message-driver-select').innerHTML = html;
         }
         
-        // ============ БЕКАП ============
+        // ============ БЕКАП С ПОДТВЕРЖДЕНИЕМ ============
         window.exportBackup = function() {
             const backup = {
                 drivers: LOCAL_DRIVERS,
@@ -3198,6 +3675,18 @@
             alert('✅ Бекап сохранен');
         };
         
+        window.confirmImportBackup = function() {
+            const message = `⚠️ ВНИМАНИЕ!\n\n` +
+                `Импорт бекапа:\n` +
+                `✅ ДОБАВИТ новые данные (водители, поездки)\n` +
+                `❌ НЕ удалит существующие данные\n\n` +
+                `Продолжить?`;
+            
+            if (confirm(message)) {
+                importBackup();
+            }
+        };
+        
         window.importBackup = async function() {
             const fileInput = document.getElementById('backup-file');
             if (!fileInput.files[0]) {
@@ -3210,13 +3699,45 @@
                 try {
                     const backup = JSON.parse(e.target.result);
                     
-                    if (backup.drivers) LOCAL_DRIVERS = backup.drivers;
-                    if (backup.trips) LOCAL_TRIPS = backup.trips;
-                    if (backup.messages) LOCAL_MESSAGES = backup.messages;
-                    if (backup.archive) LOCAL_ARCHIVE = backup.archive;
+                    if (backup.drivers) {
+                        // Добавляем только новых водителей (по телефону)
+                        backup.drivers.forEach(newDriver => {
+                            const exists = LOCAL_DRIVERS.find(d => d.phone === newDriver.phone);
+                            if (!exists) {
+                                LOCAL_DRIVERS.push(newDriver);
+                            }
+                        });
+                    }
+                    
+                    if (backup.trips) {
+                        // Добавляем все поездки (с проверкой на дубликаты по id)
+                        backup.trips.forEach(newTrip => {
+                            const exists = LOCAL_TRIPS.find(t => t.id === newTrip.id);
+                            if (!exists) {
+                                LOCAL_TRIPS.push(newTrip);
+                            }
+                        });
+                    }
+                    
+                    if (backup.messages) {
+                        backup.messages.forEach(newMsg => {
+                            const exists = LOCAL_MESSAGES.find(m => m.id === newMsg.id);
+                            if (!exists) {
+                                LOCAL_MESSAGES.push(newMsg);
+                            }
+                        });
+                    }
+                    
+                    if (backup.archive) {
+                        backup.archive.forEach(newArch => {
+                            const exists = LOCAL_ARCHIVE.find(a => a.month === newArch.month);
+                            if (!exists) {
+                                LOCAL_ARCHIVE.push(newArch);
+                            }
+                        });
+                    }
+                    
                     if (backup.rate) currentRate = backup.rate;
-                    if (backup.adminCred) ADMIN_CRED = backup.adminCred;
-                    if (backup.curatorCred) CURATOR_CRED = backup.curatorCred;
                     
                     saveToStorage();
                     
@@ -3236,12 +3757,12 @@
                         }
                     }
                     
-                    alert('✅ Бекап восстановлен');
+                    alert('✅ Бекап восстановлен (данные добавлены)');
                     
                     if (currentRole === 'admin') loadAdminData();
                     if (currentRole === 'curator') loadCuratorData();
                 } catch (e) {
-                    alert('❌ Ошибка восстановления');
+                    alert('❌ Ошибка восстановления: ' + e.message);
                 }
             };
             reader.readAsText(fileInput.files[0]);
