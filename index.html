@@ -21,7 +21,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
     <style>
-        /* ===== СТИЛИ (без изменений, как в твоём файле) ===== */
+        /* ===== СТИЛИ (те же, что и раньше) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a3a4a; font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; position: relative; min-height: 100vh; padding-bottom: 60px; }
         .mobile-container { max-width: 450px; width: 100%; background: #f8fcff; min-height: 100vh; box-shadow: 0 25px 50px -10px rgba(0,0,0,0.4); margin: 0 auto; position: relative; }
@@ -85,7 +85,7 @@
 <body>
     <!-- Версия приложения -->
     <div class="version-footer" id="app-version">
-        🚛 Шинторг CRM • Версия 2.2.0
+        🚛 Шинторг CRM • Версия 2.3.0
     </div>
     
     <!-- Индикаторы -->
@@ -571,14 +571,19 @@
                 </div>
             </div>
             
-            <!-- АРХИВ -->
+            <!-- АРХИВ (С КНОПКОЙ ВОССТАНОВЛЕНИЯ) -->
             <div id="admin-archive-tab" class="hidden">
                 <div class="admin-card">
                     <div class="d-flex justify-content-between mb-4">
                         <h5><i class="bi bi-archive"></i> Архив закрытых месяцев</h5>
-                        <button class="btn btn-outline-danger" onclick="clearAllArchives()">
-                            <i class="bi bi-trash"></i> Очистить все
-                        </button>
+                        <div>
+                            <button class="btn btn-success me-2" onclick="restoreSelectedMonth()">
+                                <i class="bi bi-arrow-return-left"></i> Восстановить выбранный месяц
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="clearAllArchives()">
+                                <i class="bi bi-trash"></i> Очистить все
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="row mb-4">
@@ -878,7 +883,7 @@
 
     <script>
         // ============ ВЕРСИЯ ПРИЛОЖЕНИЯ ============
-        const APP_VERSION = '2.2.0';
+        const APP_VERSION = '2.3.0';
         
         // ============ ВАШИ КЛЮЧИ FIREBASE ============
         const firebaseConfig = {
@@ -2783,6 +2788,54 @@
             document.getElementById('curator-archive-content').innerHTML = curatorHtml || '<p class="text-center py-5 text-secondary"><i class="bi bi-archive fs-1"></i><br>Нет архивов</p>';
         }
         
+        // ============ ВОССТАНОВЛЕНИЕ МЕСЯЦА ИЗ АРХИВА ============
+        window.restoreSelectedMonth = function() {
+            const monthSelect = document.getElementById('admin-archive-month-select');
+            const month = monthSelect.value;
+            
+            if (!month) {
+                alert('❌ Сначала выберите месяц в списке');
+                return;
+            }
+            
+            const archiveIndex = LOCAL_ARCHIVE.findIndex(a => a.month === month);
+            
+            if (archiveIndex === -1) {
+                alert('❌ Архив за этот месяц не найден');
+                return;
+            }
+            
+            const confirmRestore = confirm(`Восстановить месяц ${month} из архива?\nВсе поездки за этот месяц вернутся в активные, архив будет удалён.`);
+            
+            if (!confirmRestore) return;
+            
+            const archive = LOCAL_ARCHIVE[archiveIndex];
+            let added = 0;
+            let skipped = 0;
+            
+            archive.trips.forEach(trip => {
+                const exists = LOCAL_TRIPS.find(t => t.id === trip.id);
+                if (!exists) {
+                    LOCAL_TRIPS.push(trip);
+                    added++;
+                } else {
+                    skipped++;
+                }
+            });
+            
+            // Удаляем архив
+            LOCAL_ARCHIVE.splice(archiveIndex, 1);
+            
+            // Сохраняем
+            saveToStorage();
+            
+            // Обновляем интерфейс
+            loadArchiveList();
+            updateArchiveSelectors();
+            
+            alert(`✅ Месяц ${month} восстановлен!\nДобавлено поездок: ${added}\nПропущено (дубликаты): ${skipped}`);
+        };
+        
         window.loadAdminArchiveMonth = function() {
             const month = document.getElementById('admin-archive-month-select').value;
             if (!month) {
@@ -3167,7 +3220,7 @@
         };
         
         window.closeMonth = async function(selectedMonth) {
-            const month = selectedMonth || new Date().toISOString().slice(0, 7); // если месяц не передан - берём текущий
+            const month = selectedMonth || new Date().toISOString().slice(0, 7);
             const monthTrips = LOCAL_TRIPS.filter(t => t.date && t.date.startsWith(month));
             
             if (monthTrips.length === 0) {
@@ -3177,7 +3230,6 @@
             
             const total = monthTrips.reduce((s, t) => s + (t.earn || 0), 0);
             
-            // Составляем сводку по водителям
             const summary = {};
             monthTrips.forEach(t => {
                 if (!summary[t.driverName]) {
@@ -3188,7 +3240,6 @@
                 summary[t.driverName].totalEarn += t.earn || 0;
             });
             
-            // Добавляем в архив с информацией о том, кто закрыл
             const archiveData = {
                 month: month,
                 trips: JSON.parse(JSON.stringify(monthTrips)),
@@ -3199,15 +3250,11 @@
             };
             
             LOCAL_ARCHIVE.push(archiveData);
-            
-            // Удаляем поездки за этот месяц
             LOCAL_TRIPS = LOCAL_TRIPS.filter(t => !t.date || !t.date.startsWith(month));
             
-            // СОХРАНЯЕМ
             saveToStorage();
             await syncToFirebase('archive', archiveData);
             
-            // Удаляем поездки из Firebase
             if (navigator.onLine) {
                 for (const trip of monthTrips) {
                     await db.collection('trips').doc(trip.id).delete();
@@ -3218,7 +3265,6 @@
             const displayMonth = `${monthNum}.${year.slice(-2)}`;
             alert(`✅ Месяц ${displayMonth} закрыт! Итого: ${total} ₽`);
             
-            // Обновляем интерфейс
             if (currentRole === 'admin') {
                 loadAdminData();
                 document.getElementById('report-month-select').value = '';
@@ -3238,7 +3284,6 @@
                 document.getElementById('curator-total-earn').innerHTML = '0 ₽';
             }
             
-            // Если водитель сейчас в системе, обновляем его данные
             if (currentRole === 'driver') {
                 loadDriverData();
             }
@@ -3253,20 +3298,16 @@
             if (rate > 0) {
                 currentRate = rate;
                 
-                // Обновляем отображение на экране входа
                 document.getElementById('rate-display').innerHTML = `${rate} ₽/ч`;
                 
-                // Если сейчас открыт кабинет водителя — обновляем тариф там
                 if (currentRole === 'driver') {
                     document.getElementById('driver-rate').innerText = rate;
                 }
                 
-                // Если открыт кабинет админа — обновляем поле ввода
                 if (currentRole === 'admin') {
                     document.getElementById('admin-rate-input').value = rate;
                 }
                 
-                // Сохраняем в localStorage
                 saveToStorage();
                 
                 alert('✅ Тариф обновлен');
@@ -3348,7 +3389,6 @@
                     const backup = JSON.parse(e.target.result);
                     
                     if (backup.drivers) {
-                        // Добавляем только новых водителей (по телефону)
                         backup.drivers.forEach(newDriver => {
                             const exists = LOCAL_DRIVERS.find(d => d.phone === newDriver.phone);
                             if (!exists) {
@@ -3358,7 +3398,6 @@
                     }
                     
                     if (backup.trips) {
-                        // Добавляем все поездки (с проверкой на дубликаты по id)
                         backup.trips.forEach(newTrip => {
                             const exists = LOCAL_TRIPS.find(t => t.id === newTrip.id);
                             if (!exists) {
@@ -3389,7 +3428,6 @@
                     
                     saveToStorage();
                     
-                    // Синхронизируем с Firebase
                     if (navigator.onLine) {
                         for (const driver of LOCAL_DRIVERS) {
                             await syncToFirebase('drivers', driver);
