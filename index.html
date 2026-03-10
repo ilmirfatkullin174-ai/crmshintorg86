@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Шинторг • CRM</title>
     
-    <!-- Фавикон (эмодзи грузовик) -->
+    <!-- Фавикон -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚛</text></svg>">
     
     <!-- Bootstrap 5 + Icons -->
@@ -21,456 +21,71 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background: #0a3a4a;
-            font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
-            position: relative;
-            min-height: 100vh;
-            padding-bottom: 60px;
-        }
-        
-        .mobile-container {
-            max-width: 450px;
-            width: 100%;
-            background: #f8fcff;
-            min-height: 100vh;
-            box-shadow: 0 25px 50px -10px rgba(0,0,0,0.4);
-            margin: 0 auto;
-            position: relative;
-        }
-        
-        .admin-wrapper {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f8fcff;
-            min-height: 100vh;
-        }
-        
-        .app-header {
-            background: linear-gradient(135deg, #0f5e7e, #0a405a);
-            color: white;
-            padding: 20px 18px;
-            border-bottom-left-radius: 30px;
-            border-bottom-right-radius: 30px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-        }
-        
-        .mobile-card {
-            background: white;
-            border-radius: 24px;
-            padding: 18px;
-            margin: 12px 16px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.03);
-            border: 1px solid rgba(255,255,255,0.8);
-        }
-        
-        .admin-card {
-            background: white;
-            border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.05);
-            height: 100%;
-            border: 1px solid #e9ecef;
-        }
-        
-        .mobile-btn {
-            border-radius: 60px !important;
-            padding: 14px 20px !important;
-            font-weight: 700 !important;
-            border: none !important;
-            box-shadow: 0 6px 0 rgba(0,0,0,0.08) !important;
-            transition: 0.08s !important;
-            width: 100%;
-        }
-        
-        .mobile-btn:active {
-            transform: translateY(6px) !important;
-            box-shadow: 0 2px 0 rgba(0,0,0,0.08) !important;
-        }
-        
-        .timer-big {
-            font-size: 52px;
-            font-weight: 900;
-            font-family: 'Courier New', monospace;
-            text-align: center;
-            color: #0f5e7e;
-            background: #e8f4fa;
-            padding: 16px;
-            border-radius: 30px;
-            letter-spacing: 6px;
-        }
-        
-        .geo-active {
-            background: #d4f0d4;
-            color: #1e6b3b;
-            padding: 10px 16px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        .geo-inactive {
-            background: #ffe6e6;
-            color: #b34141;
-            padding: 10px 16px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        .mobile-tabs {
-            display: flex;
-            background: white;
-            border-radius: 50px;
-            padding: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-            overflow-x: auto;
-            flex-wrap: wrap;
-        }
-        
-        .mobile-tab {
-            flex: 1;
-            text-align: center;
-            padding: 12px 16px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 14px;
-            color: #5f7e8c;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-        }
-        
-        .mobile-tab.active {
-            background: #0f5e7e;
-            color: white;
-        }
-        
-        .status-working {
-            background: #d4f0d4;
-            color: #1e6b3b;
-            padding: 6px 14px;
-            border-radius: 50px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-        
-        .status-intercity {
-            background: #ffeab6;
-            color: #8e6200;
-            padding: 6px 14px;
-            border-radius: 50px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-        
-        .status-offline {
-            background: #ecf0f3;
-            color: #5d6f7e;
-            padding: 6px 14px;
-            border-radius: 50px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-        
-        .message-bubble {
-            background: #e3f2fd;
-            border-radius: 24px 24px 24px 8px;
-            padding: 16px;
-            margin: 12px 16px;
-            border-left: 8px solid #0f5e7e;
-            animation: slideIn 0.3s ease;
-            position: relative;
-        }
-        
-        .message-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: red;
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        .driver-stat-item {
-            background: white;
-            border-radius: 18px;
-            padding: 16px;
-            margin-bottom: 12px;
-            border-left: 6px solid #0f5e7e;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-        
-        .trip-row {
-            background: white;
-            border-radius: 16px;
-            padding: 14px;
-            margin-bottom: 8px;
-            border: 1px solid #ecf3f7;
-            transition: 0.2s;
-        }
-        
-        .trip-row:hover {
-            background: #f8fcff;
-            border-color: #0f5e7e;
-        }
-        
-        .summary-card {
-            background: linear-gradient(145deg, #f6fafe, #e9f2f8);
-            border-radius: 20px;
-            padding: 20px;
-            margin: 16px 0;
-            border: 2px solid rgba(15,94,126,0.1);
-        }
-        
-        .archive-card {
-            background: linear-gradient(145deg, #fcf8e7, #fef9e9);
-            border-radius: 20px;
-            padding: 18px;
-            margin-bottom: 16px;
-            border-left: 8px solid #ffae42;
-            box-shadow: 0 6px 15px rgba(255,174,66,0.1);
-        }
-        
-        .offline-badge {
-            background: #ff9800;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 50px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-        
-        .sync-badge {
-            background: #4caf50;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 50px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        .table-responsive-custom {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .admin-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .admin-table th {
-            background: #0f5e7e;
-            color: white;
-            padding: 14px 12px;
-            font-weight: 600;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-        
-        .admin-table td {
-            padding: 14px 12px;
-            border-bottom: 1px solid #e9ecef;
-            vertical-align: middle;
-        }
-        
-        .admin-table tbody tr:hover {
-            background: #f8f9fa;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-            border: 1px solid #e9ecef;
-            text-align: center;
-            transition: 0.2s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-        }
-        
-        .stat-value {
-            font-size: 42px;
-            font-weight: 900;
-            color: #0f5e7e;
-            line-height: 1.2;
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 6px;
-        }
-        
-        .status-indicator-working {
-            background: #28a745;
-            box-shadow: 0 0 8px #28a745;
-        }
-        
-        .status-indicator-intercity {
-            background: #ffc107;
-            box-shadow: 0 0 8px #ffc107;
-        }
-        
-        .status-indicator-offline {
-            background: #6c757d;
-        }
-        
-        .version-footer {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(255,255,255,0.9);
-            padding: 5px 15px;
-            border-radius: 50px;
-            font-size: 12px;
-            color: #0f5e7e;
-            font-weight: 600;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 9999;
-        }
-        
-        .rate-info {
-            font-size: 13px;
-            color: #6c757d;
-            margin-top: 5px;
-            text-align: center;
-        }
-        
-        .search-box {
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 50px;
-            border: 1px solid #dee2e6;
-            width: 100%;
-        }
-        
-        .geo-link {
-            color: #0f5e7e;
-            text-decoration: none;
-            font-size: 12px;
-        }
-        
-        .geo-link:hover {
-            text-decoration: underline;
-        }
-        
+        /* ===== СТИЛИ (без изменений, как в твоём файле) ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a3a4a; font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; position: relative; min-height: 100vh; padding-bottom: 60px; }
+        .mobile-container { max-width: 450px; width: 100%; background: #f8fcff; min-height: 100vh; box-shadow: 0 25px 50px -10px rgba(0,0,0,0.4); margin: 0 auto; position: relative; }
+        .admin-wrapper { max-width: 1600px; margin: 0 auto; padding: 20px; background: #f8fcff; min-height: 100vh; }
+        .app-header { background: linear-gradient(135deg, #0f5e7e, #0a405a); color: white; padding: 20px 18px; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .mobile-card { background: white; border-radius: 24px; padding: 18px; margin: 12px 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.8); }
+        .admin-card { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); height: 100%; border: 1px solid #e9ecef; }
+        .mobile-btn { border-radius: 60px !important; padding: 14px 20px !important; font-weight: 700 !important; border: none !important; box-shadow: 0 6px 0 rgba(0,0,0,0.08) !important; transition: 0.08s !important; width: 100%; }
+        .mobile-btn:active { transform: translateY(6px) !important; box-shadow: 0 2px 0 rgba(0,0,0,0.08) !important; }
+        .timer-big { font-size: 52px; font-weight: 900; font-family: 'Courier New', monospace; text-align: center; color: #0f5e7e; background: #e8f4fa; padding: 16px; border-radius: 30px; letter-spacing: 6px; }
+        .geo-active { background: #d4f0d4; color: #1e6b3b; padding: 10px 16px; border-radius: 50px; font-size: 14px; font-weight: 600; }
+        .geo-inactive { background: #ffe6e6; color: #b34141; padding: 10px 16px; border-radius: 50px; }
+        .mobile-tabs { display: flex; background: white; border-radius: 50px; padding: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); overflow-x: auto; flex-wrap: wrap; }
+        .mobile-tab { flex: 1; text-align: center; padding: 12px 16px; border-radius: 50px; font-weight: 700; font-size: 14px; color: #5f7e8c; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .mobile-tab.active { background: #0f5e7e; color: white; }
+        .status-working { background: #d4f0d4; color: #1e6b3b; padding: 6px 14px; border-radius: 50px; font-size: 13px; font-weight: 600; }
+        .status-intercity { background: #ffeab6; color: #8e6200; padding: 6px 14px; border-radius: 50px; }
+        .status-offline { background: #ecf0f3; color: #5d6f7e; padding: 6px 14px; border-radius: 50px; }
+        .message-bubble { background: #e3f2fd; border-radius: 24px 24px 24px 8px; padding: 16px; margin: 12px 16px; border-left: 8px solid #0f5e7e; animation: slideIn 0.3s ease; position: relative; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .driver-stat-item { background: white; border-radius: 18px; padding: 16px; margin-bottom: 12px; border-left: 6px solid #0f5e7e; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .trip-row { background: white; border-radius: 16px; padding: 14px; margin-bottom: 8px; border: 1px solid #ecf3f7; transition: 0.2s; }
+        .trip-row:hover { background: #f8fcff; border-color: #0f5e7e; }
+        .summary-card { background: linear-gradient(145deg, #f6fafe, #e9f2f8); border-radius: 20px; padding: 20px; margin: 16px 0; border: 2px solid rgba(15,94,126,0.1); }
+        .archive-card { background: linear-gradient(145deg, #fcf8e7, #fef9e9); border-radius: 20px; padding: 18px; margin-bottom: 16px; border-left: 8px solid #ffae42; box-shadow: 0 6px 15px rgba(255,174,66,0.1); }
+        .offline-badge { background: #ff9800; color: white; padding: 4px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; }
+        .sync-badge { background: #4caf50; color: white; padding: 4px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; }
+        .hidden { display: none !important; }
+        .table-responsive-custom { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table th { background: #0f5e7e; color: white; padding: 14px 12px; font-weight: 600; font-size: 14px; white-space: nowrap; }
+        .admin-table td { padding: 14px 12px; border-bottom: 1px solid #e9ecef; vertical-align: middle; }
+        .stat-card { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #e9ecef; text-align: center; transition: 0.2s; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 42px; font-weight: 900; color: #0f5e7e; line-height: 1.2; }
+        .status-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
+        .status-indicator-working { background: #28a745; box-shadow: 0 0 8px #28a745; }
+        .status-indicator-intercity { background: #ffc107; box-shadow: 0 0 8px #ffc107; }
+        .status-indicator-offline { background: #6c757d; }
+        .version-footer { position: fixed; bottom: 10px; right: 10px; background: rgba(255,255,255,0.9); padding: 5px 15px; border-radius: 50px; font-size: 12px; color: #0f5e7e; font-weight: 600; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 9999; }
+        .rate-info { font-size: 13px; color: #6c757d; margin-top: 5px; text-align: center; }
+        .search-box { margin-bottom: 15px; padding: 10px; border-radius: 50px; border: 1px solid #dee2e6; width: 100%; }
+        .geo-link { color: #0f5e7e; text-decoration: none; font-size: 12px; }
+        .geo-link:hover { text-decoration: underline; }
         @media (max-width: 768px) {
-            .admin-wrapper {
-                padding: 10px;
-            }
-            .stat-value {
-                font-size: 32px;
-            }
-            .mobile-tab {
-                font-size: 12px;
-                padding: 10px 8px;
-            }
-            .version-footer {
-                bottom: 5px;
-                right: 5px;
-                font-size: 10px;
-                padding: 3px 10px;
-            }
+            .admin-wrapper { padding: 10px; }
+            .stat-value { font-size: 32px; }
+            .mobile-tab { font-size: 12px; padding: 10px 8px; }
+            .version-footer { bottom: 5px; right: 5px; font-size: 10px; padding: 3px 10px; }
         }
-        
-        .message-item {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-left: 4px solid #0f5e7e;
-        }
-        
-        .message-item.unread {
-            background: #fff3cd;
-            border-left-color: #ffc107;
-        }
-        
-        .time-badge {
-            background: #e9ecef;
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 12px;
-            color: #495057;
-        }
-        
-        .connection-status {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 9999;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .connection-online {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .connection-offline {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .message-icon {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .unread-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #dc3545;
-            color: white;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .message-item { background: #f8f9fa; border-radius: 12px; padding: 12px; margin-bottom: 10px; border-left: 4px solid #0f5e7e; }
+        .message-item.unread { background: #fff3cd; border-left-color: #ffc107; }
+        .time-badge { background: #e9ecef; padding: 4px 8px; border-radius: 20px; font-size: 12px; color: #495057; }
+        .connection-status { position: fixed; top: 10px; left: 10px; z-index: 9999; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .connection-online { background: #d4edda; color: #155724; }
+        .connection-offline { background: #f8d7da; color: #721c24; }
+        .message-icon { position: relative; display: inline-block; }
+        .unread-badge { position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
     <!-- Версия приложения -->
     <div class="version-footer" id="app-version">
-        🚛 Шинторг CRM • Версия 2.1.1
+        🚛 Шинторг CRM • Версия 2.2.0
     </div>
     
     <!-- Индикаторы -->
@@ -1263,7 +878,7 @@
 
     <script>
         // ============ ВЕРСИЯ ПРИЛОЖЕНИЯ ============
-        const APP_VERSION = '2.1.1';
+        const APP_VERSION = '2.2.0';
         
         // ============ ВАШИ КЛЮЧИ FIREBASE ============
         const firebaseConfig = {
@@ -1944,6 +1559,13 @@
         window.endShift = async function() {
             console.log('endShift вызвана');
             
+            // Принудительно загружаем актуальный тариф из localStorage
+            let savedRate = localStorage.getItem('shintorg_rate');
+            if (savedRate) {
+                currentRate = parseFloat(savedRate);
+                console.log('Тариф загружен из localStorage:', currentRate);
+            }
+            
             if (!shiftActive) {
                 alert('Смена не активна');
                 return;
@@ -2093,7 +1715,7 @@
             
             const driverTrips = LOCAL_TRIPS.filter(t => t.driverId === currentUser.phone);
             const today = new Date().toISOString().split('T')[0];
-            const currentMonth = today.slice(0, 7); // Текущий месяц (2026-02)
+            const currentMonth = today.slice(0, 7); // Текущий месяц (2026-03)
             
             // ✅ БЕРЁМ ТОЛЬКО ПОЕЗДКИ ЗА ТЕКУЩИЙ МЕСЯЦ
             const monthTrips = driverTrips.filter(t => t.date && t.date.startsWith(currentMonth));
@@ -3518,9 +3140,17 @@
             w.print();
         };
         
-        // ============ ЗАКРЫТИЕ МЕСЯЦА С ПОДТВЕРЖДЕНИЕМ ============
+        // ============ ЗАКРЫТИЕ МЕСЯЦА (ИСПРАВЛЕНО) ============
         window.confirmCloseMonth = function() {
-            const month = new Date().toISOString().slice(0, 7);
+            // Берём выбранный месяц из списка
+            const monthSelect = document.getElementById('report-month-select');
+            const month = monthSelect.value;
+            
+            if (!month) {
+                alert('❌ Сначала выберите месяц в списке');
+                return;
+            }
+            
             const [year, monthNum] = month.split('-');
             const displayMonth = `${monthNum}.${year.slice(-2)}`;
             
@@ -3532,16 +3162,16 @@
                 `Продолжить?`;
             
             if (confirm(message)) {
-                closeMonth();
+                closeMonth(month); // передаём выбранный месяц
             }
         };
         
-        window.closeMonth = async function() {
-            const month = new Date().toISOString().slice(0, 7);
+        window.closeMonth = async function(selectedMonth) {
+            const month = selectedMonth || new Date().toISOString().slice(0, 7); // если месяц не передан - берём текущий
             const monthTrips = LOCAL_TRIPS.filter(t => t.date && t.date.startsWith(month));
             
             if (monthTrips.length === 0) {
-                alert('❌ Нет поездок за текущий месяц');
+                alert('❌ Нет поездок за этот месяц');
                 return;
             }
             
